@@ -219,6 +219,7 @@ export default function SettingsPanel({ settings, onSave, onClose }) {
             </label>
           </div>
         </fieldset>
+        <div className="modal__actions">
           <button className="btn btn--ghost" onClick={onClose}>
             Cancel
           </button>
