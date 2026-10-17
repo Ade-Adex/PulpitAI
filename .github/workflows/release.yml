@@ -74,8 +74,8 @@ jobs:
       - name: Create GitHub Release and upload installers
         run: |
           TAG_NAME="${GITHUB_REF#refs/tags/}"
-          # Only upload FILES (skip unpacked dirs like linux-unpacked/, mac-arm64/, win-unpacked/)
-          mapfile -t FILES < <(find release-artifacts -maxdepth 1 -type f | sort)
+          # Only upload installer files (skip unpacked dirs, blockmaps, debug yml)
+          mapfile -t FILES < <(find release-artifacts -maxdepth 1 -type f \( -name '*.exe' -o -name '*.zip' -o -name '*.dmg' -o -name '*.AppImage' -o -name '*.deb' -o -name '*.yml' \) ! -name '*.blockmap' | sort)
           echo "Uploading ${#FILES[@]} files:"
           printf '  %s\n' "${FILES[@]}"
           # Delete existing release object if re-run (keep the tag itself)
