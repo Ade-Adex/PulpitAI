@@ -74,9 +74,12 @@ jobs:
       - name: Create GitHub Release and upload installers
         run: |
           TAG_NAME="${GITHUB_REF#refs/tags/}"
-          shopt -s nullglob dotglob
-          FILES=(release-artifacts/*)
-          echo "Uploading ${#FILES[@]} files: ${FILES[*]}"
+          # Only upload FILES (skip unpacked dirs like linux-unpacked/, mac-arm64/, win-unpacked/)
+          mapfile -t FILES < <(find release-artifacts -maxdepth 1 -type f | sort)
+          echo "Uploading ${#FILES[@]} files:"
+          printf '  %s\n' "${FILES[@]}"
+          # Delete existing release object if re-run (keep the tag itself)
+          gh release delete "$TAG_NAME" --yes 2>/dev/null || true
           gh release create "$TAG_NAME" --title "PulpitAI ${TAG_NAME}" --generate-notes "${FILES[@]}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
