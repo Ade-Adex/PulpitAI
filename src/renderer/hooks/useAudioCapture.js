@@ -6,7 +6,20 @@ import { createUtteranceDetector } from '../lib/vad.js';
 import { listAudioDevices, readRmsLevel } from '../lib/audio.js';
 
 const POLL_MS = 60;
-const RECORDER_MIME = 'audio/webm;codecs=opus';
+const PREFERRED_MIME = 'audio/webm;codecs=opus';
+
+// Some systems/browsers reject the preferred mime type outright — fall back
+// to the browser default instead of throwing during start().
+function pickMime() {
+  try {
+    if (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported?.(PREFERRED_MIME)) {
+      return PREFERRED_MIME;
+    }
+  } catch {
+    /* fall through to default */
+  }
+  return undefined;
+}
 
 export function useAudioCapture({ source, deviceId, vad, onUtterance }) {
   const [status, setStatus] = useState('idle'); // 'idle' | 'starting' | 'listening' | 'error'
@@ -20,6 +33,7 @@ export function useAudioCapture({ source, deviceId, vad, onUtterance }) {
   const recorderRef = useRef(null);
   const pendingClipRef = useRef([]);
   const cleanupRef = useRef(null); // full teardown, set during start()
+  const shouldRunRef = useRef(false); // false after stop()/teardown so onstop never restarts
   const onUtteranceRef = useRef(onUtterance);
   onUtteranceRef.current = onUtterance;
 
@@ -87,18 +101,30 @@ export function useAudioCapture({ source, deviceId, vad, onUtterance }) {
       analyser.fftSize = 2048;
       ctx.createMediaStreamSource(stream).connect(analyser);
 
-      const recorder = new MediaRecorder(stream, { mimeType: RECORDER_MIME });
+      const mime = pickMime();
+      const recorder = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
       recorderRef.current = recorder;
       pendingClipRef.current = [];
+      shouldRunRef.current = true;
 
       recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) pendingClipRef.current.push(e.data);
+        if (e.data?.size > 0) pendingClipRef.current.push(e.data);
       };
       recorder.onstop = () => {
-        const clip = new Blob(pendingClipRef.current, { type: RECORDER_MIME });
+        const type = recorder.mimeType || 'audio/webm';
+        const clip = new Blob(pendingClipRef.current, { type });
         pendingClipRef.current = [];
         if (clip.size > 0) onUtteranceRef.current?.(clip);
+        // Restart so the NEXT utterance is captured too — stop() was only
+        // the boundary for this phrase. No-op after stop()/teardown.
+        try {
+          if (shouldRunRef.current && recorderRef.current === recorder) recorder.start();
+        } catch (err) {
+          console.error('[useAudioCapture] recorder restart failed', err);
+        }
       };
+      // Without this nothing is ever recorded (this was the dead-transcript bug).
+      recorder.start();
 
       const detector = createUtteranceDetector({
         threshold: vad.threshold,
@@ -118,6 +144,7 @@ export function useAudioCapture({ source, deviceId, vad, onUtterance }) {
 
       // Full teardown for stop() and unmount.
       cleanupRef.current = () => {
+        shouldRunRef.current = false;
         clearInterval(timer);
         if (recorderRef.current?.state === 'recording') recorderRef.current.stop();
         streamRef.current?.getTracks().forEach((t) => t.stop());

@@ -1,5 +1,5 @@
 // App: composes the UI from small components and owns the shared state.
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import AppHeader from './components/AppHeader.jsx';
 import ControlBar from './components/ControlBar.jsx';
 import AudioSourcePanel from './components/AudioSourcePanel.jsx';
@@ -20,11 +20,15 @@ export default function App() {
   const [deviceId, setDeviceId] = useState('');
   const [showSettings, setShowSettings] = useState(false);
 
-  const vad = {
-    threshold: settings?.vadThreshold ?? 0.018,
-    silenceMs: settings?.vadSilenceMs ?? 700,
-    maxUtteranceMs: settings?.maxUtteranceMs ?? 15000,
-  };
+  // Memoised so useAudioCapture's start() identity stays stable across renders.
+  const vad = useMemo(
+    () => ({
+      threshold: settings?.vadThreshold ?? 0.018,
+      silenceMs: settings?.vadSilenceMs ?? 700,
+      maxUtteranceMs: settings?.maxUtteranceMs ?? 15000,
+    }),
+    [settings?.vadThreshold, settings?.vadSilenceMs, settings?.maxUtteranceMs],
+  );
 
   const capture = useAudioCapture({
     source,

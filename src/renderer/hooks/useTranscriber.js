@@ -1,6 +1,6 @@
 // useTranscriber: receives audio clips from the capture hook, ships them to
 // the Electron pipeline, and collects finished Yoruba/English segments.
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { api } from '../lib/api.js';
 import { blobToBase64 } from '../lib/audio.js';
 
@@ -8,7 +8,6 @@ export function useTranscriber() {
   const [segments, setSegments] = useState([]);
   const [pipelineState, setPipelineState] = useState('idle');
   const [lastError, setLastError] = useState(null);
-  const busyRef = useRef(false);
 
   // Subscribe to segments pushed from the main process (also covers any
   // future path where segments arrive outside our direct invoke()).
@@ -27,16 +26,16 @@ export function useTranscriber() {
   }, []);
 
   const submitClip = useCallback(async (clip) => {
-    if (busyRef.current) return; // drop overlapping clips; preaching is sequential
-    busyRef.current = true;
+    // No client-side gating: the main-process pipeline already serialises
+    // jobs so captions stay in order. Dropping clips here lost speech.
     try {
+      if (!clip || clip.size < 500) return; // ignore empty ticks
       const audioBase64 = await blobToBase64(clip);
       await api.transcribeChunk(audioBase64);
       setLastError(null);
     } catch (err) {
+      console.error('[useTranscriber]', err);
       setLastError(err.message);
-    } finally {
-      busyRef.current = false;
     }
   }, []);
 

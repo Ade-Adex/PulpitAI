@@ -1,0 +1,50 @@
+appId: com.adex.pulpitai
+productName: PulpitAI
+copyright: Copyright (c) 2026 Adeolu Adex
+
+directories:
+  output: release
+
+files:
+  - dist/renderer/**/*
+  - electron/**/*
+  - package.json
+
+extraFiles:
+  - from: node_modules/ws/build/Release
+    to: node_modules/ws/build/Release
+    filter: ["*.node"]
+
+win:
+  target:
+    - nsis
+    - portable
+  icon: electron/icons/icon.ico
+  # NSIS → per-user install by default; no admin rights needed
+  # (nuget's "bootstrapper" is not required for per-user installs)
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  artifactName: ${productName}-${version}-setup-${arch}.exe
+
+portable:
+  artifactName: ${productName}-${version}-portable-${arch}.zip
+
+mac:
+  target:
+    - dmg
+    - zip
+  icon: electron/icons/icon.icns
+
+linux:
+  target:
+    - AppImage
+    - deb
+  icon: electron/icons
+  artifactName: ${productName}-${version}-${arch}.${ext}
+
+publish:
+  provider: github
+  owner: YOUR_USERNAME
+  repo: PulpitAI

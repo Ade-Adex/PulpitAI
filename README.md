@@ -47,11 +47,27 @@ npm run dev        # starts Vite + Electron together
 2. Pick your audio source (mic / system audio / both).
 3. Press **Start Listening** and preach — captions appear in the app and the overlay.
 
-Build a Windows installer:
+### Building installers (one command on each OS)
+
+The release workflow builds Windows `.exe` (NSIS installer + portable ZIP),
+macOS `.dmg`/`.zip`, and Linux `.AppImage`/`.deb` and publishes them as a
+GitHub Release automatically.
 
 ```bash
-npm run build      # outputs to release/
+# local (Windows builds win32 only)
+npm run build
+
+# cross-platform release build via GitHub Actions
+git tag v1.0.0
+git push origin v1.0.0
 ```
+
+A new GitHub Release is created with a downloadable installer for your OS.
+
+> To publish from GitHub Actions, set the marketplace/publisher settings in
+> `package.json`'s `build.publish` (currently `owner: YOUR_USERNAME`).
+> After pushing a tag, the action builds and attaches all installers to the
+> new GitHub Release automatically.
 
 ## Using with OBS Studio
 
