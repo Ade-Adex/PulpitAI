@@ -32,6 +32,14 @@ export class OverlayServer {
     if (this.#server) return;
 
     const app = express();
+
+    // Serve the overlay page at /overlay (OBS Browser Source URL).
+    // Without this, Express static looks for index.html which doesn't exist
+    // (the file is overlay.html), so GET /overlay returns 404.
+    app.get('/overlay', (_req, res) => {
+      res.sendFile(path.join(OVERLAY_DIR, 'overlay.html'));
+    });
+
     app.use('/overlay', express.static(OVERLAY_DIR));
 
     // Overlay page fetches its styling once on load.

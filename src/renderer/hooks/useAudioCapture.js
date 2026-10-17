@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { createUtteranceDetector } from '../lib/vad.js';
 import { listAudioDevices, readRmsLevel } from '../lib/audio.js';
 
-const POLL_MS = 60;
+const POLL_MS = 30;
 const PREFERRED_MIME = 'audio/webm;codecs=opus';
 
 // Some systems/browsers reject the preferred mime type outright — fall back

@@ -22,8 +22,8 @@ const DEFAULTS = {
   overlayPort: 8787,
   // Audio / VAD
   vadThreshold: 0.018, //0..1, RMS silence gate
-  vadSilenceMs: 700, // ms of silence that ends an utterance
-  maxUtteranceMs: 15000, // force-send even if still talking
+  vadSilenceMs: 400, // ms of silence that ends an utterance (lower = faster captions)
+  maxUtteranceMs: 6000, // force-send even if still talking (lower = faster captions)
 };
 
 export class SettingsStore {

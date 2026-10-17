@@ -11,19 +11,37 @@ import { translateToEnglish } from './translation/openaiTranslator.js';
 
 export class TranscriptionPipeline extends EventEmitter {
   #settings;
-  #queue = Promise.resolve(); // serialises jobs so captions stay in order
+  #nextSeq = 0; // monotonic sequence number for each enqueued chunk
+  #inFlight = new Map(); // seq -> Promise<{ seq, segment }>
+  #emitted = 0; // next seq to emit (keeps captions in order)
 
   constructor(settings) {
     super();
     this.#settings = settings;
   }
 
-  // Queue a chunk for processing. Resolves with the finished segment.
-  // Jobs run one at a time - preaching is sequential, so captions stay in order.
+  // Queue a chunk for processing. Multiple chunks can be in flight at once
+  // (concurrent STT calls), but segments are always emitted in capture order
+  // so the transcript never gets jumbled.
   enqueue(audioBlob) {
-    const job = this.#queue.then(() => this.#process(audioBlob));
-    this.#queue = job.catch(() => {}); // keep the chain alive after errors
-    return job;
+    const seq = this.#nextSeq++;
+    const promise = this.#process(audioBlob).then((segment) => ({ seq, segment }));
+    this.#inFlight.set(seq, promise);
+    this.#drain();
+    return promise.then(({ segment }) => segment);
+  }
+
+  // Emit any completed segments whose turn has come, in sequence order.
+  #drain() {
+    const emitNext = async () => {
+      while (this.#inFlight.has(this.#emitted)) {
+        const result = await this.#inFlight.get(this.#emitted);
+        this.#inFlight.delete(result.seq);
+        if (result.segment) this.emit('segment', result.segment);
+        this.#emitted++;
+      }
+    };
+    emitNext();
   }
 
   // Mirrors effectiveProvider() in src/renderer/lib/providers.js.
