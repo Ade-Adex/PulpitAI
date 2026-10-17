@@ -1,0 +1,19 @@
+
+> pulpit-ai@0.1.0 build
+> npm run build:renderer && electron-builder --win
+
+
+> pulpit-ai@0.1.0 build:renderer
+> vite build
+
+[36mvite v6.4.4 [32mbuilding for production...[36m[39m
+transforming...
+[32m✓[39m 45 modules transformed.
+rendering chunks...
+computing gzip size...
+[2m../../dist/renderer/[22m[32mindex.html                 [39m[1m[2m  0.64 kB[22m[1m[22m[2m │ gzip:  0.38 kB[22m
+[2m../../dist/renderer/[22m[35massets/index-DGrrL6HT.css  [39m[1m[2m  5.08 kB[22m[1m[22m[2m │ gzip:  1.55 kB[22m
+[2m../../dist/renderer/[22m[36massets/index-B3R7PnHO.js   [39m[1m[2m240.38 kB[22m[1m[22m[2m │ gzip: 74.78 kB[22m
+[32m✓ built in 1.56s[39m
+  • electron-builder  version=26.15.3 os=10.0.26100
+  • loaded configuration  file=package.json ("build" field)
