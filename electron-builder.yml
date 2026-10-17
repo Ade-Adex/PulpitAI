@@ -10,11 +10,6 @@ files:
   - electron/**/*
   - package.json
 
-extraFiles:
-  - from: node_modules/ws/build/Release
-    to: node_modules/ws/build/Release
-    filter: ["*.node"]
-
 win:
   target:
     - nsis
@@ -39,6 +34,11 @@ linux:
     - AppImage
     - deb
   artifactName: ${productName}-${version}-${arch}.${ext}
+  maintainer: Adeolu Adex <adeoluamole@gmail.com>
+  category: Utility
+  desktop:
+    Name: PulpitAI
+    Comment: Real-time Yoruba to English sermon translator
 
 publish:
   provider: github
