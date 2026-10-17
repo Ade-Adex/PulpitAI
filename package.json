@@ -53,8 +53,7 @@
       "target": [
         "nsis",
         "portable"
-      ],
-      "icon": "electron/icons/icon.ico"
+      ]
     },
     "nsis": {
       "oneClick": false,
@@ -68,20 +67,18 @@
       "target": [
         "dmg",
         "zip"
-      ],
-      "icon": "electron/icons/icon.icns"
+      ]
     },
     "linux": {
       "target": [
         "AppImage",
         "deb"
       ],
-      "icon": "electron/icons",
       "artifactName": "${productName}-${version}-${arch}.${ext}"
     },
     "publish": {
       "provider": "github",
-      "owner": "YOUR_USERNAME",
+      "owner": "Ade-Adex",
       "repo": "PulpitAI"
     }
   }

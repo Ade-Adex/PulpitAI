@@ -1,5 +1,15 @@
 # PulpitAI 🎙️
 
+[![Release](https://img.shields.io/github/v/release/Ade-Adex/PulpitAI?style=for-the-badge&label=Download)](https://github.com/Ade-Adex/PulpitAI/releases/latest)
+[![Windows](https://img.shields.io/badge/Windows-.exe-blue?style=for-the-badge&logo=windows)](https://github.com/Ade-Adex/PulpitAI/releases/latest)
+[![macOS](https://img.shields.io/badge/macOS-.dmg-black?style=for-the-badge&logo=apple)](https://github.com/Ade-Adex/PulpitAI/releases/latest)
+
+> **⬇️ Download the app:** go to the [**Latest Release**](https://github.com/Ade-Adex/PulpitAI/releases/latest)
+> and grab the installer for your OS:
+> - **Windows** → `PulpitAI-0.1.0-setup-x64.exe` (run it, no admin needed)
+> - **macOS** → `PulpitAI-0.1.0-arm64.dmg` (drag to Applications)
+> - **Linux** → `PulpitAI-0.1.0-x64.AppImage` or `.deb`
+
 Real-time **Yoruba → English** sermon translator for livestreams. A pastor preaches in
 Yoruba; English captions appear instantly in OBS, vMix, or any livestream software —
 no human interpreter needed.
@@ -64,10 +74,16 @@ git push origin v1.0.0
 
 A new GitHub Release is created with a downloadable installer for your OS.
 
-> To publish from GitHub Actions, set the marketplace/publisher settings in
-> `package.json`'s `build.publish` (currently `owner: YOUR_USERNAME`).
-> After pushing a tag, the action builds and attaches all installers to the
-> new GitHub Release automatically.
+### Download the app (for users — no code needed)
+
+1. Open **https://github.com/Ade-Adex/PulpitAI/releases/latest**
+2. Under **Assets**, download your installer and run it:
+   - Windows: `PulpitAI-<version>-setup-x64.exe`
+   - macOS: `PulpitAI-<version>-arm64.dmg`
+   - Linux: `PulpitAI-<version>-x64.AppImage` or `.deb`
+
+> The Release only appears after a version tag is pushed (see below).
+> Until the first tag is pushed, the link above shows "no releases".
 
 ## Using with OBS Studio
 
