@@ -431,3 +431,226 @@ body {
   justify-content: flex-end;
   gap: 10px;
 }
+
+/* ================= Theme support ================= */
+html[data-theme='light'] {
+  --bg: #f3f4f6;
+  --bg-panel: #ffffff;
+  --bg-elevated: #e5e7eb;
+  --border: #d1d5db;
+  --text: #111827;
+  --text-dim: #6b7280;
+  --accent: #2563eb;
+  --green: #16a34a;
+  --red: #dc2626;
+  --yellow: #d97706;
+}
+
+body[data-theme='light'] {
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* ================= Animations ================= */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.segment {
+  animation: slideIn 0.25s ease-out;
+}
+
+/* ================= Provider badge ================= */
+.segment__provider {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(77, 163, 255, 0.15);
+  color: var(--accent);
+}
+
+.segment__provider--fallback {
+  background: rgba(217, 119, 6, 0.15);
+  color: var(--yellow);
+}
+
+/* ================= Pipeline status warning ================= */
+.pipeline-state--warning {
+  color: var(--yellow);
+}
+
+.error-text--warn {
+  color: var(--yellow);
+  font-size: 12px;
+  word-break: break-word;
+}
+
+/* ================= Glassmorphism panels ================= */
+.panel {
+  background: rgba(22, 27, 35, 0.85);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  backdrop-filter: blur(6px);
+}
+
+html[data-theme='light'] .panel {
+  background: rgba(255, 255, 255, 0.85);
+}
+
+/* ================= Control bar polish ================= */
+.controlbar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+/* ================= Header polish ================= */
+.header__badge {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--bg-elevated);
+}
+
+.header__badge--live {
+  color: var(--red);
+  border-color: var(--red);
+  background: rgba(248, 81, 73, 0.1);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* ================= Source option polish ================= */
+.source-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 8px 10px;
+  border-radius: 6px;
+  transition: background 0.15s ease;
+}
+
+.source-option input[type='radio'] {
+  accent-color: var(--accent);
+}
+
+/* ================= Transcript panel empty state ================= */
+.transcript__empty {
+  color: var(--text-dim);
+  text-align: center;
+  margin-top: 60px;
+  line-height: 1.6;
+  font-size: 13px;
+}
+
+/* ================= Level meter polish ================= */
+.level-meter__fill {
+  transition: width 0.05s linear, background 0.15s ease;
+}
+
+.level-meter__threshold {
+  background: var(--yellow);
+}
+
+/* ================= Settings modal ================= */
+.modal {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px 24px;
+  width: min(700px, 92vw);
+  max-height: 88vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+}
+
+html[data-theme='light'] .modal {
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+}
+
+.fieldset {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--bg-elevated);
+}
+
+.fieldset legend {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  padding: 0 6px;
+  width: auto;
+}
+
+input[type='color'] {
+  border: none;
+  background: none;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  padding: 0;
+  border-radius: 6px;
+}
+
+input[type='color']::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+input[type='color']::-webkit-color-swatch {
+  border: none;
+  border-radius: 6px;
+}
+
+/* ================= Layout responsive ================= */
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ================= Always on top indicator ================= */
+.header__badge--ontop {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(77, 163, 255, 0.1);
+  margin-left: 8px;
+}

@@ -18,6 +18,14 @@ const DEFAULTS = {
   captionFontSize: 42,
   maxCaptions: 3,
   captionIdleSeconds: 12, // clear overlay after this much silence
+  transcriptFontSize: 14, // px, app transcript panel
+  showTimestamps: true,
+  showLatency: true,
+  autoScroll: true,
+  theme: 'dark', // 'dark' | 'light'
+  accentColor: '#4da3ff',
+  alwaysOnTop: false,
+
   // Overlay server
   overlayPort: 8787,
   // Audio / VAD

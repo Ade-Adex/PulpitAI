@@ -55,17 +55,18 @@ export class TranscriptionPipeline extends EventEmitter {
   async #process(audioBlob) {
     const s = this.#settings.get();
     const startedAt = Date.now();
-    const provider = this.#resolveProvider(s);
-    const demo = provider === 'demo';
+    const requested = this.#resolveProvider(s);
+    const demo = requested === 'demo';
 
     this.emit('status', { state: 'transcribing' });
     try {
       let yoruba = '';
       let english = '';
       let audioSec = null;
+      let provider = requested;
+      let fellBack = false;
 
-      if (provider === 'gemini') {
-        // One free-tier call transcribes AND translates.
+      const runGemini = async () => {
         const result = await geminiProcess({
           apiKey: s.geminiApiKey,
           model: s.geminiModel,
@@ -73,12 +74,9 @@ export class TranscriptionPipeline extends EventEmitter {
         });
         yoruba = result.yoruba;
         english = result.english;
-      } else if (provider === 'demo') {
-        const result = await mockTranscribe(audioBlob);
-        yoruba = result.text;
-        english = result.english;
-        audioSec = result.durationSec ?? null;
-      } else {
+      };
+
+      const runOpenAI = async () => {
         const stt = await transcribeAudio({
           apiKey: s.apiKey,
           model: s.sttModel,
@@ -94,6 +92,51 @@ export class TranscriptionPipeline extends EventEmitter {
             yorubaText: yoruba,
           });
         }
+      };
+
+      const runDemo = async () => {
+        const result = await mockTranscribe(audioBlob);
+        yoruba = result.text;
+        english = result.english;
+        audioSec = result.durationSec ?? null;
+      };
+
+      try {
+        if (provider === 'gemini') {
+          await runGemini();
+        } else if (provider === 'openai') {
+          await runOpenAI();
+        } else {
+          await runDemo();
+        }
+      } catch (firstErr) {
+        // Gemini 429 / quota exceeded → fall back to OpenAI, then Demo.
+        // OpenAI failure → fall back to Demo.
+        if (provider === 'gemini' && s.apiKey) {
+          provider = 'openai';
+          fellBack = true;
+          this.emit('status', { state: 'transcribing' });
+          await runOpenAI();
+        } else if (provider === 'openai') {
+          provider = 'demo';
+          fellBack = true;
+          this.emit('status', { state: 'transcribing' });
+          await runDemo();
+        } else if (provider === 'gemini') {
+          provider = 'demo';
+          fellBack = true;
+          this.emit('status', { state: 'transcribing' });
+          await runDemo();
+        } else {
+          throw firstErr;
+        }
+      }
+
+      if (fellBack) {
+        this.emit('status', {
+          state: 'warning',
+          message: `Switched to ${provider} (primary provider rate-limited or unavailable). Captions continue.`,
+        });
       }
 
       if (!yoruba) {
@@ -108,7 +151,9 @@ export class TranscriptionPipeline extends EventEmitter {
         at: Date.now(),
         audioSec,
         latencyMs: Date.now() - startedAt,
-        demo,
+        demo: provider === 'demo',
+        provider,
+        fellBack,
       };
 
       this.emit('segment', segment);

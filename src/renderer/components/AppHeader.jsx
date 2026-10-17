@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function AppHeader({ listening }) {
+export default function AppHeader({ listening, alwaysOnTop }) {
   return (
     <header className="header">
       <h1 className="header__title">
@@ -10,6 +10,9 @@ export default function AppHeader({ listening }) {
       <span className={`header__badge ${listening ? 'header__badge--live' : ''}`}>
         {listening ? '● LIVE' : '○ standby'}
       </span>
+      {alwaysOnTop && (
+        <span className="header__badge header__badge--ontop">⇧ ALWAYS ON TOP</span>
+      )}
     </header>
   );
 }

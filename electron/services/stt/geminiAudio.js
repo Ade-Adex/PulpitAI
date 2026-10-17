@@ -22,13 +22,37 @@ const RESPONSE_SCHEMA = {
   required: ['yoruba', 'english'],
 };
 
+// Retry with exponential backoff for 429 rate-limit errors.
+// Free tier Gemini is generous but not unlimited — back off and retry so
+// a transient quota spike doesn't kill the whole transcript session.
+async function fetchWithRetry(url, opts, maxRetries = 4) {
+  let lastErr = null;
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    const res = await fetch(url, opts);
+    if (res.ok) return res;
+    if (res.status === 429) {
+      const detail = await res.text().catch(() => '');
+      const retryAfter = res.headers.get('retry-after');
+      const delayMs = retryAfter ? parseInt(retryAfter, 10) * 1000 : Math.min(1000 * 2 ** attempt, 8000);
+      lastErr = new Error(`Gemini rate-limited (429). Retrying in ${delayMs / 1000}s... ${detail.slice(0, 200)}`);
+      console.warn(`[geminiAudio] ${lastErr.message}`);
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+      continue;
+    }
+    const detail = await res.text().catch(() => '');
+    const hint = res.status === 400 || res.status === 403 ? ' (check your Gemini API key in Settings)' : '';
+    throw new Error(`Gemini request failed (${res.status})${hint}: ${detail.slice(0, 300)}`);
+  }
+  throw lastErr;
+}
+
 export async function transcribeAndTranslate({ apiKey, model, audioBlob }) {
   if (!apiKey) throw new Error('No Gemini API key configured. Set it in Settings.');
 
   const bytes = Buffer.from(await audioBlob.arrayBuffer());
   const base64 = bytes.toString('base64');
 
-  const res = await fetch(
+  const res = await fetchWithRetry(
     `${API_BASE}/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`,
     {
       method: 'POST',
@@ -52,17 +76,6 @@ export async function transcribeAndTranslate({ apiKey, model, audioBlob }) {
       signal: AbortSignal.timeout(60_000),
     },
   );
-
-  if (!res.ok) {
-    const detail = await res.text().catch(() => '');
-    const hint =
-      res.status === 429
-        ? ' (free-tier rate limit - wait a few seconds and try again)'
-        : res.status === 400 || res.status === 403
-          ? ' (check your Gemini API key in Settings)'
-          : '';
-    throw new Error(`Gemini request failed (${res.status})${hint}: ${detail.slice(0, 300)}`);
-  }
 
   const data = await res.json();
   const text = data.candidates?.[0]?.content?.parts

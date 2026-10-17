@@ -21,6 +21,8 @@ export default function SettingsPanel({ settings, onSave, onClose }) {
       vadThreshold: Number(form.vadThreshold),
       vadSilenceMs: Number(form.vadSilenceMs),
       maxUtteranceMs: Number(form.maxUtteranceMs),
+      transcriptFontSize: Number(form.transcriptFontSize),
+      alwaysOnTop: Boolean(form.alwaysOnTop),
     });
     onClose();
   };
@@ -169,7 +171,54 @@ export default function SettingsPanel({ settings, onSave, onClose }) {
           </div>
         </fieldset>
 
-        <div className="modal__actions">
+        <fieldset className="fieldset">
+          <legend>Appearance</legend>
+          <div className="field-row">
+            <label className="field">
+              <span>Theme</span>
+              <select value={form.theme} onChange={set('theme')}>
+                <option value="dark">Dark</option>
+                <option value="light">Light</option>
+              </select>
+            </label>
+            <label className="field">
+              <span>Accent color</span>
+              <input type="color" value={form.accentColor} onChange={set('accentColor')} />
+            </label>
+          </div>
+          <label className="field field--inline">
+            <input type="checkbox" checked={form.alwaysOnTop} onChange={set('alwaysOnTop')} />
+            Keep window always on top
+          </label>
+        </fieldset>
+
+        <fieldset className="fieldset">
+          <legend>Transcript display</legend>
+          <div className="field-row">
+            <label className="field">
+              <span>Font size (px)</span>
+              <input
+                type="number"
+                min="12"
+                max="24"
+                value={form.transcriptFontSize}
+                onChange={setNumber('transcriptFontSize')}
+              />
+            </label>
+            <label className="field field--inline">
+              <input type="checkbox" checked={form.showTimestamps} onChange={set('showTimestamps')} />
+              Show timestamps
+            </label>
+            <label className="field field--inline">
+              <input type="checkbox" checked={form.showLatency} onChange={set('showLatency')} />
+              Show latency
+            </label>
+            <label className="field field--inline">
+              <input type="checkbox" checked={form.autoScroll} onChange={set('autoScroll')} />
+              Auto-scroll to bottom
+            </label>
+          </div>
+        </fieldset>
           <button className="btn btn--ghost" onClick={onClose}>
             Cancel
           </button>

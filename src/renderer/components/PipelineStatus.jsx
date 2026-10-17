@@ -6,9 +6,10 @@ const MESSAGES = {
   transcribing: 'Listening… transcribing Yoruba',
   translating: 'Translating to English…',
   error: 'Error',
+  warning: 'Provider fallback',
 };
 
-export default function PipelineStatus({ state, error, demoMode, provider }) {
+export default function PipelineStatus({ state, error, warning, demoMode, provider }) {
   const providerLabel = PROVIDERS.find((p) => p.value === provider)?.label ?? provider;
 
   return (
@@ -26,6 +27,7 @@ export default function PipelineStatus({ state, error, demoMode, provider }) {
           translation at no cost.
         </p>
       )}
+      {warning && <p className="error-text error-text--warn">⚠ {warning}</p>}
       {error && <p className="error-text">{error}</p>}
     </section>
   );

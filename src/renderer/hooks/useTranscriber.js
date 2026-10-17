@@ -8,6 +8,7 @@ export function useTranscriber() {
   const [segments, setSegments] = useState([]);
   const [pipelineState, setPipelineState] = useState('idle');
   const [lastError, setLastError] = useState(null);
+  const [lastWarning, setLastWarning] = useState(null);
 
   // Subscribe to segments pushed from the main process (also covers any
   // future path where segments arrive outside our direct invoke()).
@@ -18,6 +19,8 @@ export function useTranscriber() {
     const unsubStatus = api.onPipelineStatus((status) => {
       setPipelineState(status.state);
       if (status.state === 'error') setLastError(status.message);
+      if (status.state === 'warning') setLastWarning(status.message);
+      if (status.state === 'idle') setLastWarning(null); // clear warning when back to idle
     });
     return () => {
       unsubscribe();
@@ -41,5 +44,5 @@ export function useTranscriber() {
 
   const clearSegments = useCallback(() => setSegments([]), []);
 
-  return { segments, pipelineState, lastError, submitClip, clearSegments };
+  return { segments, pipelineState, lastError, lastWarning, submitClip, clearSegments };
 }
