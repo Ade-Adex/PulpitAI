@@ -39,12 +39,20 @@ export class SettingsStore {
   #data;
 
   constructor() {
-    this.#file = path.join(app.getPath('userData'), 'pulpitai-settings.json');
+    let userData;
+    try {
+      userData = app.getPath('userData');
+    } catch {
+      // Electron app not fully ready yet — fall back to a temp path
+      userData = path.resolve(require('os').homedir(), '.pulpitai');
+    }
+    this.#file = path.join(userData, 'pulpitai-settings.json');
     this.#data = { ...DEFAULTS, ...this.#load() };
   }
 
   #load() {
     try {
+      if (!fs.existsSync(this.#file)) return {};
       return JSON.parse(fs.readFileSync(this.#file, 'utf8'));
     } catch {
       return {};
@@ -56,10 +64,19 @@ export class SettingsStore {
   }
 
   // Shallow-merge a patch, persist, and return the new settings.
+  // Undefined patch values are ignored so they don't clobber existing settings.
   save(patch) {
-    this.#data = { ...this.#data, ...patch };
-    fs.mkdirSync(path.dirname(this.#file), { recursive: true });
-    fs.writeFileSync(this.#file, JSON.stringify(this.#data, null, 2), 'utf8');
+    const cleanPatch = {};
+    for (const [key, value] of Object.entries(patch ?? {})) {
+      if (value !== undefined) cleanPatch[key] = value;
+    }
+    this.#data = { ...this.#data, ...cleanPatch };
+    try {
+      fs.mkdirSync(path.dirname(this.#file), { recursive: true });
+      fs.writeFileSync(this.#file, JSON.stringify(this.#data, null, 2), 'utf8');
+    } catch (err) {
+      console.error('[settingsStore] failed to persist settings:', err.message);
+    }
     return this.get();
   }
 }
