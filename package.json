@@ -70,13 +70,7 @@
       "artifactName": "${productName}-${version}-${arch}.${ext}",
       "maintainer": "Adeolu Adex <adeoluamole@gmail.com>",
       "category": "Utility",
-      "synopsis": "Real-time Yoruba to English sermon translator",
-      "desktop": {
-        "entry": {
-          "Name": "PulpitAI",
-          "Comment": "Real-time Yoruba to English sermon translator"
-        }
-      }
+      "synopsis": "Real-time Yoruba to English sermon translator"
     },
     "publish": {
       "provider": "github",

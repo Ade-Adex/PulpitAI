@@ -37,12 +37,17 @@ linux:
   maintainer: Adeolu Adex <adeoluamole@gmail.com>
   category: Utility
   synopsis: Real-time Yoruba to English sermon translator
-  desktop:
-    entry:
-      Name: PulpitAI
-      Comment: Real-time Yoruba to English sermon translator
+  # NOTE: linux.desktop.entry removed — electron-builder 26.15.3 ships a broken
+  # scheme.json where LinuxDesktopFile.entry/desktopActions are typed as
+  # {"typeof":"function"} instead of object, so ANY desktop object fails AJV
+  # validation ("should be one of these: null"). Defaults are auto-generated.
 
 publish:
   provider: github
   owner: Ade-Adex
   repo: PulpitAI
+
+# --- electron-builder 26.15.3 schema workaround ---
+# Pinned via package.json devDependency. Do NOT re-add linux.desktop
+# until upstream fixes LinuxDesktopFile.entry typing.
+
