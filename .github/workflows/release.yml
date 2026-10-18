@@ -78,8 +78,9 @@ jobs:
           mapfile -t FILES < <(find release-artifacts -maxdepth 1 -type f \( -name '*.exe' -o -name '*.zip' -o -name '*.dmg' -o -name '*.AppImage' -o -name '*.deb' -o -name '*.yml' \) ! -name '*.blockmap' | sort)
           echo "Uploading ${#FILES[@]} files:"
           printf '  %s\n' "${FILES[@]}"
-          # Delete existing release object if re-run (keep the tag itself)
+          # Delete existing release if re-run (keep the tag itself)
           gh release delete "$TAG_NAME" --yes 2>/dev/null || true
-          gh release create "$TAG_NAME" --title "PulpitAI ${TAG_NAME}" --generate-notes "${FILES[@]}"
+          # Use --target with the commit SHA so gh doesn't try to create/push the tag itself
+          gh release create "$TAG_NAME" --target "${GITHUB_SHA}" --title "PulpitAI ${TAG_NAME}" --generate-notes "${FILES[@]}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
