@@ -1,7 +1,7 @@
 {
   "name": "pulpit-ai",
   "productName": "PulpitAI",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "type": "module",
   "description": "Real-time Yoruba to English sermon translator for livestreams (OBS / vMix)",
   "main": "electron/main.js",
