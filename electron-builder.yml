@@ -10,6 +10,11 @@ files:
   - electron/**/*
   - package.json
 
+# Unpack overlay assets out of app.asar so fs/readFile access is reliable
+# (belt-and-suspenders alongside the fs.readFileSync serving in overlayServer).
+asarUnpack:
+  - electron/services/public/**/*
+
 win:
   target:
     - nsis
