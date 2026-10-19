@@ -345,6 +345,48 @@ body {
   font-weight: 600;
 }
 
+/* Interim caption: text still streaming in from the provider. */
+.segment--interim {
+  border-left: 3px solid var(--accent);
+  opacity: 0.8;
+  animation: segment-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes segment-pulse {
+  0%, 100% { border-left-color: var(--accent); }
+  50% { border-left-color: transparent; }
+}
+
+.segment__live-tag {
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+/* ================= Overlay panel: Demo ⇄ Live switch ================= */
+.overlay-row--mode {
+  margin-bottom: 6px;
+}
+
+.overlay-mode-badge {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
+.overlay-mode-badge--demo {
+  background: var(--yellow);
+  color: #1a1200;
+}
+
+.overlay-mode-badge--live {
+  background: #16a34a;
+  color: #ffffff;
+}
+
 /* ================= Modal ================= */
 .modal-backdrop {
   position: fixed;

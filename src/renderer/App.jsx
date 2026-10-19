@@ -76,7 +76,7 @@ export default function App() {
             provider={settings ? effectiveProvider(settings) : null}
             demoMode={settings ? effectiveProvider(settings) === 'demo' : false}
           />
-          <OverlayPanel />
+          <OverlayPanel settings={settings} onSave={save} />
         </div>
 
         <div className="layout__right">

@@ -32,24 +32,31 @@
     });
   }
 
+  // Upsert a caption by segment id: streaming partials update the card in
+  // place and the final text overwrites the interim one — no duplicates.
   function addCaption(segment) {
-    const card = document.createElement('div');
-    card.className = 'caption';
-
-    if (config.showYorubaLine && segment.yoruba) {
+    let card = captionsEl.querySelector(`[data-id="${segment.id}"]`);
+    if (!card) {
+      card = document.createElement('div');
+      card.className = 'caption';
+      card.dataset.id = segment.id;
       const y = document.createElement('div');
       y.className = 'yoruba';
-      y.textContent = segment.yoruba;
+      const e = document.createElement('div');
+      e.className = 'english';
       card.appendChild(y);
+      card.appendChild(e);
+      captionsEl.appendChild(card);
     }
 
-    const e = document.createElement('div');
-    e.className = 'english';
-    e.textContent = segment.english || segment.yoruba || '';
-    e.style.fontSize = `${config.captionFontSize}px`;
-    card.appendChild(e);
+    const yEl = card.querySelector('.yoruba');
+    const eEl = card.querySelector('.english');
+    const showYoruba = config.showYorubaLine && segment.yoruba;
+    yEl.style.display = showYoruba ? '' : 'none';
+    yEl.textContent = segment.yoruba || '';
+    eEl.textContent = segment.english || segment.yoruba || '';
+    card.classList.toggle('caption--interim', !!segment.interim);
 
-    captionsEl.appendChild(card);
     applyConfig();
 
     // Trim to maxCaptions.
@@ -57,8 +64,11 @@
       captionsEl.removeChild(captionsEl.firstChild);
     }
 
-    // Auto-fade after idle seconds.
-    setTimeout(() => {
+    // Every update re-arms the idle countdown so streaming captions don't
+    // fade out mid-sentence.
+    clearTimeout(card._fadeTimer);
+    card.classList.remove('fade-out');
+    card._fadeTimer = setTimeout(() => {
       card.classList.add('fade-out');
       setTimeout(() => card.remove(), 700);
     }, config.captionIdleSeconds * 1000);

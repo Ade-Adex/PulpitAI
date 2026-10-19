@@ -30,8 +30,8 @@ const DEFAULTS = {
   overlayPort: 8787,
   // Audio / VAD
   vadThreshold: 0.018, //0..1, RMS silence gate
-  vadSilenceMs: 400, // ms of silence that ends an utterance (lower = faster captions)
-  maxUtteranceMs: 6000, // force-send even if still talking (lower = faster captions)
+  vadSilenceMs: 300, // ms of silence that ends an utterance (lower = faster captions)
+  maxUtteranceMs: 5000, // force-send even if still talking (lower = faster captions)
 };
 
 export class SettingsStore {
@@ -47,7 +47,17 @@ export class SettingsStore {
       userData = path.resolve(require('os').homedir(), '.pulpitai');
     }
     this.#file = path.join(userData, 'pulpitai-settings.json');
-    this.#data = { ...DEFAULTS, ...this.#load() };
+    this.#data = { ...DEFAULTS, ...this.#migrate(this.#load()) };
+  }
+
+  // Bump values that are still sitting on a pre-0.1.7 default so existing
+  // installs pick up the faster caption timing. Anything the user changed
+  // themselves is left alone.
+  #migrate(stored) {
+    const raw = { ...stored };
+    if (raw.vadSilenceMs === 400) raw.vadSilenceMs = 300;
+    if (raw.maxUtteranceMs === 6000) raw.maxUtteranceMs = 5000;
+    return raw;
   }
 
   #load() {

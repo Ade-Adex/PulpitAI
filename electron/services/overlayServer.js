@@ -102,11 +102,32 @@ export class OverlayServer {
     this.#history = [];
   }
 
+  // Upsert a caption: streaming partials (segment.interim) update live but
+  // are never stored in history; finals replace their interim entry by id so
+  // a late-joining OBS source replays finished captions only.
   broadcastSegment(segment) {
-    this.#history.push(segment);
-    if (this.#history.length > 10) this.#history.shift();
+    if (segment.interim) {
+      this.#send({ type: 'segment', segment });
+      return;
+    }
+    const idx = this.#history.findIndex((s) => s.id === segment.id);
+    if (idx >= 0) {
+      this.#history[idx] = segment;
+    } else {
+      this.#history.push(segment);
+      if (this.#history.length > 10) this.#history.shift();
+    }
+    this.#send({ type: 'segment', segment });
+  }
 
-    const message = JSON.stringify({ type: 'segment', segment });
+  // Called when the user switches Demo ↔ Live so stale captions from the
+  // previous mode are never replayed to a reconnecting OBS source.
+  clearHistory() {
+    this.#history = [];
+  }
+
+  #send(payload) {
+    const message = JSON.stringify(payload);
     for (const client of this.#wss?.clients ?? []) {
       if (client.readyState === 1) client.send(message);
     }

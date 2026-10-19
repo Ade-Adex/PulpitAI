@@ -6,9 +6,10 @@ function formatTime(at) {
 
 export default function TranscriptSegment({ segment, showTimestamps = true, showLatency = true }) {
   return (
-    <article className="segment">
+    <article className={`segment${segment.interim ? ' segment--interim' : ''}`}>
       <div className="segment__meta">
         {showTimestamps && <span>{formatTime(segment.at)}</span>}
+        {segment.interim && <span className="segment__live-tag">● typing</span>}
         {segment.demo && <span className="segment__demo-tag">DEMO</span>}
         {segment.provider && <span className="segment__provider">{segment.provider}</span>}
         {showLatency && segment.latencyMs != null && <span>{(segment.latencyMs / 1000).toFixed(1)}s</span>}

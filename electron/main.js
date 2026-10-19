@@ -22,13 +22,23 @@ export function getMainWindow() {
   return mainWindow;
 }
 
-// Broadcast every finished segment to the app UI and the overlay clients.
-pipeline.on('segment', (segment) => {
+// Forward every segment to the app UI. The overlay only receives captions
+// that are safe for the LIVE stream: in demo mode simulated captions are the
+// whole point (testing OBS/browser wiring), but when a live provider was
+// requested, fallback demo text must never reach the stream.
+function shouldBroadcast(segment) {
+  return !segment.demo || segment.requestedProvider === 'demo';
+}
+
+function forwardSegment(segment) {
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send('segment:new', segment);
   }
-  overlayServer.broadcastSegment(segment);
-});
+  if (shouldBroadcast(segment)) overlayServer.broadcastSegment(segment);
+}
+
+pipeline.on('segment', forwardSegment);
+pipeline.on('segment:partial', forwardSegment);
 
 pipeline.on('status', (status) => {
   if (mainWindow && !mainWindow.isDestroyed()) {

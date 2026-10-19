@@ -12,9 +12,19 @@ export function useTranscriber() {
 
   // Subscribe to segments pushed from the main process (also covers any
   // future path where segments arrive outside our direct invoke()).
+  // Upsert by id: streaming interim captions replace themselves in place and
+  // the final version overwrites the interim one — no duplicates.
   useEffect(() => {
     const unsubscribe = api.onSegment((segment) => {
-      setSegments((prev) => [...prev.slice(-199), segment]); // cap at 200
+      setSegments((prev) => {
+        const idx = prev.findIndex((s) => s.id === segment.id);
+        if (idx >= 0) {
+          const next = [...prev];
+          next[idx] = { ...prev[idx], ...segment };
+          return next;
+        }
+        return [...prev.slice(-199), segment]; // cap at 200
+      });
     });
     const unsubStatus = api.onPipelineStatus((status) => {
       setPipelineState(status.state);

@@ -42,6 +42,17 @@ body.bg-green { background: #00b140; }
 
 .caption.fade-out { opacity: 0; }
 
+/* Interim caption — text still streaming in from the provider. */
+.caption--interim {
+  border-left: 4px solid var(--accent, #4da3ff);
+  animation: caption-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes caption-pulse {
+  0%, 100% { border-left-color: rgba(77, 163, 255, 1); }
+  50% { border-left-color: rgba(77, 163, 255, 0.3); }
+}
+
 .caption .yoruba {
   font-size: 0.72em;
   color: rgba(255, 255, 255, 0.55);
