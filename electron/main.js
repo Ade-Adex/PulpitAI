@@ -1,6 +1,6 @@
 // Electron entry point: wires windows, services and IPC together.
 // Each concern lives in its own module under electron/.
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, Menu } from 'electron';
 import { createMainWindow } from './windows/mainWindow.js';
 import { SettingsStore } from './services/settingsStore.js';
 import { TranscriptionPipeline } from './services/pipeline.js';
@@ -47,6 +47,10 @@ pipeline.on('status', (status) => {
 });
 
 async function start() {
+  // No native menu bar (File/Edit/View/Window/Help) — this is a consumer
+  // app, not an editor. Removes the menu entirely on Windows/Linux.
+  Menu.setApplicationMenu(null);
+
   registerMediaPermissions();
   registerIpcHandlers({ settings, pipeline, overlayServer });
 

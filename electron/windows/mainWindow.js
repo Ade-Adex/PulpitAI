@@ -1,11 +1,12 @@
 // Main application window. Loads the Vite dev server in dev, or the built
 // renderer from dist/renderer in production.
-import { BrowserWindow } from 'electron';
+import { BrowserWindow, Menu } from 'electron';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PRELOAD = path.join(__dirname, '..', 'preload.cjs');
+const ICON = path.join(__dirname, '..', 'assets', 'icon.png');
 
 export function createMainWindow(isDev) {
   const win = new BrowserWindow({
@@ -15,6 +16,7 @@ export function createMainWindow(isDev) {
     minHeight: 640,
     backgroundColor: '#0e1116',
     title: 'PulpitAI - Yoruba to English Live Translator',
+    icon: ICON,
     webPreferences: {
       preload: PRELOAD,
       contextIsolation: true,
@@ -22,6 +24,10 @@ export function createMainWindow(isDev) {
       sandbox: false,
     },
   });
+
+  // Belt-and-suspenders: never show the File/Edit/View/... menu bar.
+  Menu.setApplicationMenu(null);
+  win.setMenu(null);
 
   if (isDev) {
     win.loadURL(process.env.PULPIT_DEV_URL);

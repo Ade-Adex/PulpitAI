@@ -20,6 +20,7 @@ win:
     - nsis
     - portable
   # NSIS → per-user install by default; no admin rights needed
+  icon: build/icon.ico
 
 nsis:
   oneClick: false
@@ -33,11 +34,13 @@ mac:
   target:
     - dmg
     - zip
+  icon: build/icon.png
 
 linux:
   target:
     - AppImage
     - deb
+  icon: build/icon.png
   artifactName: ${productName}-${version}-${arch}.${ext}
   maintainer: Adeolu Adex <adeoluamole@gmail.com>
   category: Utility

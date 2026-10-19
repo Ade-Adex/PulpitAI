@@ -57,6 +57,14 @@ body {
   color: var(--accent);
 }
 
+.header__logo {
+  width: 34px;
+  height: 34px;
+  align-self: center;
+  border-radius: 9px;
+  box-shadow: 0 0 10px rgba(77, 163, 255, 0.35);
+}
+
 .header__subtitle {
   color: var(--text-dim);
   font-size: 13px;

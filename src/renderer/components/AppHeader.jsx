@@ -3,6 +3,7 @@ import React from 'react';
 export default function AppHeader({ listening, alwaysOnTop }) {
   return (
     <header className="header">
+      <img className="header__logo" src="./logo.png" alt="PulpitAI logo" />
       <h1 className="header__title">
         Pulpit<span className="header__accent">AI</span>
       </h1>
