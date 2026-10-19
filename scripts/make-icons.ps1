@@ -75,6 +75,10 @@ function Save-Size([int]$size, [string]$path) {
 foreach ($s in 16, 24, 32, 48, 64, 128, 256, 512) {
   Save-Size $s (Join-Path $root "build\icon-$s.png")
 }
+# Plain build/icon.png (512) is what electron-builder's mac/linux config
+# points at — its icon-tool accepts .png/.svg/.icns only (NOT .ico), so this
+# file MUST exist or those builds fall back to icon.ico and fail.
+Save-Size 512 (Join-Path $root 'build\icon.png')
 Save-Size 256 (Join-Path $root 'electron\assets\icon.png')
 Save-Size 256 (Join-Path $root 'src\renderer\public\logo.png')
 Save-Size 48  (Join-Path $root 'src\renderer\public\favicon.png')
