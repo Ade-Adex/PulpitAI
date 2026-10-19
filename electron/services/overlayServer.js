@@ -61,9 +61,11 @@ export class OverlayServer {
     // Serve the overlay page at /overlay (OBS Browser Source URL).
     app.get('/overlay', (_req, res) => serveAsset('overlay.html', res));
 
-    // Static assets referenced by overlay.html (./overlay.css, ./overlay.js).
-    app.get('/overlay/overlay.css', (_req, res) => serveAsset('overlay.css', res));
-    app.get('/overlay/overlay.js', (_req, res) => serveAsset('overlay.js', res));
+    // Overlay assets. overlay.html references them as absolute paths
+    // (/overlay.css, /overlay.js) because /overlay has no trailing slash.
+    // Also accept /overlay/... so a trailing-slash URL base works too.
+    app.get(['/overlay.css', '/overlay/overlay.css'], (_req, res) => serveAsset('overlay.css', res));
+    app.get(['/overlay.js', '/overlay/overlay.js'], (_req, res) => serveAsset('overlay.js', res));
 
     // Overlay page fetches its styling once on load.
     app.get('/overlay-config', (_req, res) => {

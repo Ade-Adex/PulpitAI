@@ -5,10 +5,13 @@
   <meta http-equiv="Content-Security-Policy"
         content="default-src 'self'; connect-src 'self' ws: wss: http: https:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'" />
   <title>PulpitAI Overlay</title>
-  <link rel="stylesheet" href="./overlay.css" />
+  <link rel="icon" href="data:," />
+  <!-- Absolute paths: /overlay has no trailing slash, so relative ./overlay.css
+       would resolve to /overlay.css — register routes to match both. -->
+  <link rel="stylesheet" href="/overlay.css" />
 </head>
 <body>
   <div id="captions" class="captions position-bottom"></div>
-  <script src="./overlay.js"></script>
+  <script src="/overlay.js"></script>
 </body>
 </html>
