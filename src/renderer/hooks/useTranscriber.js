@@ -16,6 +16,10 @@ export function useTranscriber() {
   // the final version overwrites the interim one — no duplicates.
   useEffect(() => {
     const unsubscribe = api.onSegment((segment) => {
+      // Captions flowing again → a "live captions paused" banner has served
+      // its purpose. Warnings are NOT cleared on 'idle' so the user can read
+      // WHY captions stopped (e.g. Gemini 429 quota) after the fact.
+      setLastWarning(null);
       setSegments((prev) => {
         const idx = prev.findIndex((s) => s.id === segment.id);
         if (idx >= 0) {
@@ -30,7 +34,6 @@ export function useTranscriber() {
       setPipelineState(status.state);
       if (status.state === 'error') setLastError(status.message);
       if (status.state === 'warning') setLastWarning(status.message);
-      if (status.state === 'idle') setLastWarning(null); // clear warning when back to idle
     });
     return () => {
       unsubscribe();

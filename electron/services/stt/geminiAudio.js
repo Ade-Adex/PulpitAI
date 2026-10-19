@@ -29,11 +29,13 @@ const RESPONSE_SCHEMA = {
 // a transient quota spike doesn't kill the whole transcript session.
 async function fetchWithRetry(url, opts, maxRetries = 3) {
   let lastErr = null;
+  let lastDetail = '';
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     const res = await fetch(url, opts);
     if (res.ok) return res;
     if (res.status === 429) {
       const detail = await res.text().catch(() => '');
+      lastDetail = detail;
       const retryAfter = res.headers.get('retry-after');
       const delayMs = retryAfter ? parseInt(retryAfter, 10) * 1000 : Math.min(800 * 2 ** attempt, 4000);
       lastErr = new Error(`Gemini rate-limited (429). Retrying in ${delayMs / 1000}s... ${detail.slice(0, 200)}`);
@@ -45,7 +47,10 @@ async function fetchWithRetry(url, opts, maxRetries = 3) {
     const hint = res.status === 400 || res.status === 403 ? ' (check your Gemini API key in Settings)' : '';
     throw new Error(`Gemini request failed (${res.status})${hint}: ${detail.slice(0, 300)}`);
   }
-  throw lastErr;
+  // All retries exhausted — final error must be actionable, not "Retrying...".
+  throw new Error(
+    `Gemini rate-limited (429) after ${maxRetries} attempts. Free-tier quota is exhausted — wait a few minutes. ${lastDetail.slice(0, 160)}`,
+  );
 }
 
 export async function transcribeAndTranslate({ apiKey, model, audioBlob }) {

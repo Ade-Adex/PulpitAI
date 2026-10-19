@@ -14,6 +14,8 @@ export class TranscriptionPipeline extends EventEmitter {
   #nextSeq = 0; // monotonic sequence number for each enqueued chunk
   #inFlight = new Map(); // seq -> Promise<{ seq, segment }>
   #emitted = 0; // next seq to emit (keeps captions in order)
+  #geminiGate = Promise.resolve(); // serialises Gemini request pacing
+  #geminiNextAt = 0; // earliest timestamp for the next Gemini request start
 
   constructor(settings) {
     super();
@@ -60,6 +62,20 @@ export class TranscriptionPipeline extends EventEmitter {
     if (s.apiKey) return 'openai';
     if (s.geminiApiKey) return 'gemini';
     return 'demo';
+  }
+
+  // Serialise + pace Gemini request STARTS at least 4.5s apart (~13 req/min)
+  // so fast VAD chunking can't burst past the free tier's per-minute rate
+  // limit — bursts were causing 429 storms where every call failed and the
+  // transcript silently fell back to demo text.
+  #paceGemini() {
+    const run = this.#geminiGate.then(async () => {
+      const wait = this.#geminiNextAt - Date.now();
+      if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
+      this.#geminiNextAt = Date.now() + 4500;
+    });
+    this.#geminiGate = run.catch(() => {});
+    return run;
   }
 
   async #process(audioBlob) {
@@ -141,56 +157,84 @@ export class TranscriptionPipeline extends EventEmitter {
         audioSec = result.durationSec ?? null;
       };
 
-      try {
-        if (provider === 'gemini') {
+      let lastErr = null;
+      let lastErrLabel = 'Provider';
+      const attempt = async (label, fn) => {
+        try {
+          await fn();
+          return true;
+        } catch (err) {
+          lastErr = err;
+          lastErrLabel = label;
+          return false;
+        }
+      };
+
+      let ok;
+      if (provider === 'gemini') {
+        ok = await attempt('Gemini', async () => {
+          await this.#paceGemini();
           try {
             await runGeminiStream();
           } catch (streamErr) {
             // Quota/auth errors will fail identically non-streaming — bubble
-            // straight to the fallback chain. Transient stream issues only:
-            // retry once without streaming.
+            // up. Transient stream issues only: retry once without streaming.
             if (/429|rate|quota|40[13]/i.test(streamErr.message)) throw streamErr;
             console.warn('[pipeline] Gemini streaming failed, retrying plain:', streamErr.message);
+            await this.#paceGemini();
             await runGemini();
           }
-        } else if (provider === 'openai') {
-          await runOpenAI();
-        } else {
-          await runDemo();
-        }
-      } catch (firstErr) {
-        // Gemini 429 / quota exceeded → fall back to OpenAI, then Demo.
-        // OpenAI failure → fall back to Demo.
-        if (provider === 'gemini' && s.apiKey) {
-          provider = 'openai';
+        });
+      } else if (provider === 'openai') {
+        ok = await attempt('OpenAI', runOpenAI);
+      } else {
+        ok = await attempt('Demo', runDemo);
+      }
+
+      // Fallback is only ever between REAL providers (Gemini <-> OpenAI).
+      // When the user chose live mode we NEVER substitute demo text — if no
+      // real provider works we pause captions and surface the real error so
+      // fake scripture lines can't masquerade as the sermon.
+      if (!ok && requested !== 'demo') {
+        const secondary =
+          provider === 'gemini' && s.apiKey
+            ? 'openai'
+            : provider === 'openai' && s.geminiApiKey
+              ? 'gemini'
+              : null;
+        if (secondary) {
+          provider = secondary;
           fellBack = true;
           this.emit('status', { state: 'transcribing' });
-          await runOpenAI();
-        } else if (provider === 'openai') {
-          provider = 'demo';
-          fellBack = true;
-          this.emit('status', { state: 'transcribing' });
-          await runDemo();
-        } else if (provider === 'gemini') {
-          provider = 'demo';
-          fellBack = true;
-          this.emit('status', { state: 'transcribing' });
-          await runDemo();
-        } else {
-          throw firstErr;
+          ok =
+            secondary === 'openai'
+              ? await attempt('OpenAI', runOpenAI)
+              : await attempt('Gemini', async () => {
+                  await this.#paceGemini();
+                  await runGemini();
+                });
         }
       }
 
-      if (fellBack) {
-        // In live mode a demo fallback keeps the app transcript going, but the
-        // stream overlay must never show simulated text — say so clearly.
-        const overlayNote =
-          provider === 'demo' && requested !== 'demo'
-            ? ' Demo captions appear in-app only — the stream overlay is paused until a live provider recovers.'
-            : ' Captions continue.';
+      if (!ok) {
+        if (requested === 'demo') throw lastErr;
+        // LIVE MODE: pause and say exactly why (e.g. 429 quota exhausted).
+        const detail = String(lastErr?.message ?? lastErr).replace(/\s+/g, ' ').slice(0, 240);
+        const quotaNote = /429|quota/i.test(detail)
+          ? ' Free-tier quota reached — captions resume automatically once it resets.'
+          : '';
         this.emit('status', {
           state: 'warning',
-          message: `Switched to ${provider} (primary provider rate-limited or unavailable).${overlayNote}`,
+          message: `Live captions paused — ${lastErrLabel} failed: ${detail}${quotaNote} Demo text is never shown in live mode; will retry on your next phrase.`,
+        });
+        this.emit('status', { state: 'idle' });
+        return null;
+      }
+
+      if (fellBack) {
+        this.emit('status', {
+          state: 'warning',
+          message: `Switched to ${provider} (primary provider rate-limited or unavailable). Captions continue.`,
         });
       }
 
