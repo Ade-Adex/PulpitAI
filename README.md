@@ -48,10 +48,13 @@ npm run dev        # starts Vite + Electron together
 ```
 
 1. Open **⚙ Settings** and pick a provider:
-   - **Free testing (recommended):** Google Gemini — paste a free key from
-     [aistudio.google.com](https://aistudio.google.com) (**Get API key**, no card needed;
-     Nigeria is a supported region). One free call does Yoruba transcription *and*
-     English translation.
+   - **Google Gemini:** paste a key from
+     [aistudio.google.com](https://aistudio.google.com) (**Get API key**). One call does
+     Yoruba transcription *and* English translation. Quota/plan/billing limits belong to
+     the key's project.
+   - **GroQ — free tier:** paste a key from
+     [console.groq.com](https://console.groq.com) (**API Keys**). Whisper transcribes
+     Yoruba, Llama translates to English.
    - **OpenAI** (paid): paste an `sk-...` key — Whisper + gpt-4o-mini.
    - **Demo:** no key at all — simulated captions to test mic/VAD/overlay.
 2. Pick your audio source (mic / system audio / both).

@@ -22,9 +22,9 @@ export default function PipelineStatus({ state, error, warning, demoMode, provid
       {provider && <p className="hint">Provider: <strong>{providerLabel}</strong></p>}
       {demoMode && (
         <p className="hint">
-          <strong>Demo mode</strong> — captions are simulated. Add a <strong>free Gemini API
-          key</strong> in Settings (aistudio.google.com) for real Yoruba transcription + English
-          translation at no cost.
+          <strong>Demo mode</strong> — captions are simulated. Add a <strong>Gemini</strong> or{' '}
+          <strong>GroQ API key</strong> in Settings (aistudio.google.com or console.groq.com) for
+          real Yoruba transcription + English translation.
         </p>
       )}
       {warning && <p className="error-text error-text--warn">⚠ {warning}</p>}

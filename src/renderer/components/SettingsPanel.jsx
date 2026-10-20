@@ -41,11 +41,11 @@ export default function SettingsPanel({ settings, onSave, onClose }) {
               </option>
             ))}
           </select>
-          <small>Auto = first configured key wins (OpenAI, then Gemini, else Demo).</small>
+          <small>Auto = first configured key wins (OpenAI, Gemini, then GroQ — else Demo).</small>
         </label>
 
         <fieldset className="fieldset">
-          <legend>Google Gemini — free tier</legend>
+          <legend>Google Gemini</legend>
           <label className="field">
             <span>Gemini API key</span>
             <input
@@ -56,13 +56,42 @@ export default function SettingsPanel({ settings, onSave, onClose }) {
               autoComplete="off"
             />
             <small>
-              Free at <strong>aistudio.google.com</strong> → <em>Get API key</em>. No card needed.
+              Create a key at <strong>aistudio.google.com</strong> → <em>Get API key</em>. Quota and
+              plan/billing limits belong to the key&apos;s project.
             </small>
           </label>
           <label className="field">
             <span>Gemini model</span>
             <input type="text" value={form.geminiModel} onChange={set('geminiModel')} />
           </label>
+        </fieldset>
+
+        <fieldset className="fieldset">
+          <legend>GroQ — free tier</legend>
+          <label className="field">
+            <span>GroQ API key</span>
+            <input
+              type="password"
+              value={form.groqApiKey}
+              onChange={set('groqApiKey')}
+              placeholder="gsk_..."
+              autoComplete="off"
+            />
+            <small>
+              Free key at <strong>console.groq.com</strong> → <em>API Keys</em>. Whisper transcribes
+              Yoruba; Llama translates to English.
+            </small>
+          </label>
+          <div className="field-row">
+            <label className="field">
+              <span>Transcription model</span>
+              <input type="text" value={form.groqSttModel} onChange={set('groqSttModel')} />
+            </label>
+            <label className="field">
+              <span>Translation model</span>
+              <input type="text" value={form.groqChatModel} onChange={set('groqChatModel')} />
+            </label>
+          </div>
         </fieldset>
 
         <fieldset className="fieldset">

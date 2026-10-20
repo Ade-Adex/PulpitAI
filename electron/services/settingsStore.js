@@ -9,9 +9,15 @@ const DEFAULTS = {
   apiKey: '',
   sttModel: 'whisper-1', // supports Yoruba (yo)
   translatorModel: 'gpt-4o-mini',
-  // Google Gemini (free tier - great for testing; see aistudio.google.com)
+  // Google Gemini API key (aistudio.google.com or Google Cloud).
+  // Quota/plan/billing limits belong to the key's project.
   geminiApiKey: '',
   geminiModel: 'gemini-3.8-flash',
+  // GroQ (console.groq.com) — OpenAI-compatible free tier:
+  // Whisper transcribes Yoruba, Llama translates to English.
+  groqApiKey: '',
+  groqSttModel: 'whisper-large-v3',
+  groqChatModel: 'llama-3.3-70b-versatile',
   // Caption behaviour
   showYorubaLine: true,
   captionPosition: 'bottom', // 'bottom' | 'top'

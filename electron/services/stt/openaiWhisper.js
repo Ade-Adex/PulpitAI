@@ -1,7 +1,8 @@
-// Whisper transcription client (OpenAI API).
+// Whisper transcription client (OpenAI API — or any OpenAI-compatible
+// endpoint such as GroQ via baseUrl: https://api.groq.com/openai/v1).
 // Accepts a Blob of audio (webm/opus from MediaRecorder) and returns Yoruba text.
-export async function transcribeAudio({ apiKey, model, audioBlob }) {
-  if (!apiKey) throw new Error('No OpenAI API key configured. Set it in Settings.');
+export async function transcribeAudio({ apiKey, model, audioBlob, baseUrl = 'https://api.openai.com/v1' }) {
+  if (!apiKey) throw new Error('No transcription API key configured. Set it in Settings.');
 
   const form = new FormData();
   form.append('file', audioBlob, 'utterance.webm');
@@ -11,7 +12,7 @@ export async function transcribeAudio({ apiKey, model, audioBlob }) {
   form.append('prompt', 'Ọ̀rọ̀ mímọ́ kan ni a ń sọ. Tún kọ orúkọ Jesu, Mọ́sè, Dafídù, àti àwọn ọrọ̀ mímọ́ dáadáa.');
   form.append('response_format', 'verbose_json');
 
-  const res = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+  const res = await fetch(`${baseUrl}/audio/transcriptions`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${apiKey}` },
     body: form,

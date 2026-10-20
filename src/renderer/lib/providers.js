@@ -1,16 +1,18 @@
 // Shared provider resolution (mirrored in the main-process pipeline).
-// 'auto' = use the first configured key: OpenAI, then Gemini, else demo.
+// 'auto' = use the first configured key: OpenAI, then Gemini, then GroQ, else demo.
 export const PROVIDERS = [
   { value: 'auto', label: 'Auto (recommended)' },
-  { value: 'gemini', label: 'Google Gemini — free tier' },
+  { value: 'gemini', label: 'Google Gemini' },
+  { value: 'groq', label: 'GroQ — free tier (Whisper + Llama)' },
   { value: 'openai', label: 'OpenAI' },
   { value: 'demo', label: 'Demo (no key, simulated)' },
 ];
 
 export function effectiveProvider(settings) {
   if (!settings) return 'demo';
-  if (['openai', 'gemini', 'demo'].includes(settings.provider)) return settings.provider;
+  if (['openai', 'gemini', 'groq', 'demo'].includes(settings.provider)) return settings.provider;
   if (settings.apiKey) return 'openai';
   if (settings.geminiApiKey) return 'gemini';
+  if (settings.groqApiKey) return 'groq';
   return 'demo';
 }

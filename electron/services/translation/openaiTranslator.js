@@ -9,11 +9,11 @@ const SYSTEM_PROMPT = [
   '- Output ONLY the English translation. No notes, no quotes, no transliteration.',
 ].join('\n');
 
-export async function translateToEnglish({ apiKey, model, yorubaText }) {
+export async function translateToEnglish({ apiKey, model, yorubaText, baseUrl = 'https://api.openai.com/v1' }) {
   if (!yorubaText) return '';
-  if (!apiKey) throw new Error('No OpenAI API key configured. Set it in Settings.');
+  if (!apiKey) throw new Error('No translation API key configured. Set it in Settings.');
 
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+  const res = await fetch(`${baseUrl}/chat/completions`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${apiKey}`,

@@ -1,4 +1,4 @@
-// Gemini audio client (Google AI Studio - FREE tier works, no card needed).
+// Gemini audio client (Google AI Studio / Google Cloud).
 // One call does BOTH jobs: Yoruba transcription + English translation,
 // returning strict JSON via responseSchema. Much cheaper than two calls.
 const API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
@@ -25,8 +25,8 @@ const RESPONSE_SCHEMA = {
 };
 
 // Retry with exponential backoff for 429 rate-limit errors.
-// Free tier Gemini is generous but not unlimited — back off and retry so
-// a transient quota spike doesn't kill the whole transcript session.
+// Gemini enforces per-minute/daily quotas on the key's project — back off
+// and retry so a transient quota spike doesn't kill the transcript session.
 async function fetchWithRetry(url, opts, maxRetries = 3) {
   let lastErr = null;
   let lastDetail = '';
@@ -49,7 +49,7 @@ async function fetchWithRetry(url, opts, maxRetries = 3) {
   }
   // All retries exhausted — final error must be actionable, not "Retrying...".
   throw new Error(
-    `Gemini rate-limited (429) after ${maxRetries} attempts. Free-tier quota is exhausted — wait a few minutes. ${lastDetail.slice(0, 160)}`,
+    `Gemini rate-limited (429) after ${maxRetries} attempts. Quota exhausted on your key's project — check plan and billing at aistudio.google.com or Google Cloud Console. ${lastDetail.slice(0, 160)}`,
   );
 }
 

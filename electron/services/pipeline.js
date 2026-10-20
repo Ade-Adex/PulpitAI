@@ -1,13 +1,20 @@
 // TranscriptionPipeline: the heart of the app.
 // Audio chunk -> STT provider -> Yoruba + English -> 'segment' event.
-// Providers: openai (Whisper + GPT), gemini (one free call does both),
-// demo (scripted captions, no key). 'auto' picks the first keyed provider.
+// Providers: gemini (one call does both), groq (Whisper + Llama),
+// openai (Whisper + GPT), demo (scripted captions, no key).
+// 'auto' picks the first keyed provider.
 import { EventEmitter } from 'node:events';
 import crypto from 'node:crypto';
 import { transcribeAudio } from './stt/openaiWhisper.js';
 import { transcribeAndTranslate as geminiProcess, streamTranscribeAndTranslate } from './stt/geminiAudio.js';
 import { mockTranscribe } from './stt/mockStt.js';
 import { translateToEnglish } from './translation/openaiTranslator.js';
+
+// GroQ exposes OpenAI-compatible endpoints, so the existing Whisper +
+// chat-completions clients are reused with this base URL.
+const GROQ_BASE = 'https://api.groq.com/openai/v1';
+const REAL_PROVIDERS = ['openai', 'gemini', 'groq'];
+const PROVIDER_LABELS = { openai: 'OpenAI', gemini: 'Gemini', groq: 'GroQ', demo: 'Demo' };
 
 export class TranscriptionPipeline extends EventEmitter {
   #settings;
@@ -16,6 +23,8 @@ export class TranscriptionPipeline extends EventEmitter {
   #emitted = 0; // next seq to emit (keeps captions in order)
   #geminiGate = Promise.resolve(); // serialises Gemini request pacing
   #geminiNextAt = 0; // earliest timestamp for the next Gemini request start
+  #geminiBlockedUntil = 0; // after a real 429: fast-fail until this time
+  #geminiBackoffStep = 0; // consecutive 429s → 15s, 30s, 60s, 120s cooldown
 
   constructor(settings) {
     super();
@@ -58,14 +67,15 @@ export class TranscriptionPipeline extends EventEmitter {
 
   // Mirrors effectiveProvider() in src/renderer/lib/providers.js.
   #resolveProvider(s) {
-    if (['openai', 'gemini', 'demo'].includes(s.provider)) return s.provider;
+    if (['openai', 'gemini', 'groq', 'demo'].includes(s.provider)) return s.provider;
     if (s.apiKey) return 'openai';
     if (s.geminiApiKey) return 'gemini';
+    if (s.groqApiKey) return 'groq';
     return 'demo';
   }
 
   // Serialise + pace Gemini request STARTS at least 4.5s apart (~13 req/min)
-  // so fast VAD chunking can't burst past the free tier's per-minute rate
+  // so fast VAD chunking can't burst past the provider's per-minute rate
   // limit — bursts were causing 429 storms where every call failed and the
   // transcript silently fell back to demo text.
   #paceGemini() {
@@ -157,22 +167,42 @@ export class TranscriptionPipeline extends EventEmitter {
         audioSec = result.durationSec ?? null;
       };
 
-      let lastErr = null;
-      let lastErrLabel = 'Provider';
-      const attempt = async (label, fn) => {
-        try {
-          await fn();
-          return true;
-        } catch (err) {
-          lastErr = err;
-          lastErrLabel = label;
-          return false;
+      // GroQ: Whisper transcribes Yoruba, Llama translates (OpenAI-compatible
+      // endpoints via baseUrl), keeping the same two-step shape as OpenAI.
+      const runGroq = async () => {
+        const stt = await transcribeAudio({
+          apiKey: s.groqApiKey,
+          model: s.groqSttModel || 'whisper-large-v3',
+          audioBlob,
+          baseUrl: GROQ_BASE,
+        });
+        yoruba = stt.text;
+        audioSec = stt.durationSec ?? null;
+        if (yoruba) {
+          this.emit('status', { state: 'translating' });
+          english = await translateToEnglish({
+            apiKey: s.groqApiKey,
+            model: s.groqChatModel || 'llama-3.3-70b-versatile',
+            yorubaText: yoruba,
+            baseUrl: GROQ_BASE,
+          });
         }
       };
 
-      let ok;
-      if (provider === 'gemini') {
-        ok = await attempt('Gemini', async () => {
+      // One runner per provider. Gemini gets pacing, stream→plain retry, and
+      // an adaptive 429 cooldown: after a real quota error it fast-fails for
+      // 15s→30s→60s→120s (instead of hammering Google) while the caption
+      // queue stays responsive and other providers can carry the stream.
+      const runnerFor = (p) => async () => {
+        if (p === 'gemini') {
+          const blockedMs = this.#geminiBlockedUntil - Date.now();
+          if (blockedMs > 0) {
+            const pause = new Error(
+              `Gemini quota pause — not retrying for ${Math.ceil(blockedMs / 1000)}s to avoid more 429s.`,
+            );
+            pause.geminiPause = true;
+            throw pause;
+          }
           await this.#paceGemini();
           try {
             await runGeminiStream();
@@ -184,45 +214,77 @@ export class TranscriptionPipeline extends EventEmitter {
             await this.#paceGemini();
             await runGemini();
           }
-        });
-      } else if (provider === 'openai') {
-        ok = await attempt('OpenAI', runOpenAI);
-      } else {
-        ok = await attempt('Demo', runDemo);
-      }
+        } else if (p === 'openai') {
+          await runOpenAI();
+        } else if (p === 'groq') {
+          await runGroq();
+        } else {
+          await runDemo();
+        }
+      };
 
-      // Fallback is only ever between REAL providers (Gemini <-> OpenAI).
-      // When the user chose live mode we NEVER substitute demo text — if no
-      // real provider works we pause captions and surface the real error so
-      // fake scripture lines can't masquerade as the sermon.
+      let lastErr = null;
+      let lastErrLabel = 'Provider';
+      const attempt = async (p, fn) => {
+        try {
+          await fn();
+          if (p === 'gemini') {
+            this.#geminiBackoffStep = 0;
+            this.#geminiBlockedUntil = 0;
+          }
+          return true;
+        } catch (err) {
+          // Keep the most informative error: self-inflicted pause messages
+          // must not overwrite a real API error from an earlier attempt.
+          if (!err.geminiPause || !lastErr) {
+            lastErr = err;
+            lastErrLabel = PROVIDER_LABELS[p] ?? p;
+          }
+          // Real API 429 → start/extend the cooldown (15s → 120s cap).
+          if (p === 'gemini' && !err.geminiPause && /429|quota/i.test(String(err.message))) {
+            this.#geminiBackoffStep = Math.min(this.#geminiBackoffStep + 1, 5);
+            this.#geminiBlockedUntil =
+              Date.now() + Math.min(15000 * 2 ** (this.#geminiBackoffStep - 1), 120_000);
+          }
+          return false;
+        }
+      };
+
+      let ok = await attempt(provider, runnerFor(provider));
+
+      // Fallback is only ever between REAL providers (OpenAI / Gemini / GroQ,
+      // whoever else has a key configured). When the user chose live mode we
+      // NEVER substitute demo text — if no real provider works we pause
+      // captions and surface the real error so fake scripture lines can't
+      // masquerade as the sermon.
       if (!ok && requested !== 'demo') {
-        const secondary =
-          provider === 'gemini' && s.apiKey
-            ? 'openai'
-            : provider === 'openai' && s.geminiApiKey
-              ? 'gemini'
-              : null;
-        if (secondary) {
-          provider = secondary;
+        const keyOf = { openai: s.apiKey, gemini: s.geminiApiKey, groq: s.groqApiKey };
+        const start = Math.max(0, REAL_PROVIDERS.indexOf(requested));
+        const chain = [
+          ...REAL_PROVIDERS.slice(start + 1),
+          ...REAL_PROVIDERS.slice(0, start),
+        ];
+        for (const p of chain) {
+          if (p === requested || !keyOf[p]) continue;
+          provider = p;
           fellBack = true;
           this.emit('status', { state: 'transcribing' });
-          ok =
-            secondary === 'openai'
-              ? await attempt('OpenAI', runOpenAI)
-              : await attempt('Gemini', async () => {
-                  await this.#paceGemini();
-                  await runGemini();
-                });
+          ok = await attempt(p, runnerFor(p));
+          if (ok) break;
         }
       }
 
       if (!ok) {
         if (requested === 'demo') throw lastErr;
-        // LIVE MODE: pause and say exactly why (e.g. 429 quota exhausted).
+        // LIVE MODE: pause and say exactly why (e.g. 429 quota/billing).
         const detail = String(lastErr?.message ?? lastErr).replace(/\s+/g, ' ').slice(0, 240);
-        const quotaNote = /429|quota/i.test(detail)
-          ? ' Free-tier quota reached — captions resume automatically once it resets.'
-          : '';
+        let quotaNote = '';
+        if (/429|quota/i.test(detail)) {
+          quotaNote = /billing|plan and billing/i.test(detail)
+            ? " Your key's project plan/billing needs attention — check aistudio.google.com → API keys."
+            : ' Quota exceeded — captions pause and retry automatically; will try again shortly.';
+          quotaNote += ' You can also switch provider in Settings (e.g. GroQ — free tier).';
+        }
         this.emit('status', {
           state: 'warning',
           message: `Live captions paused — ${lastErrLabel} failed: ${detail}${quotaNote} Demo text is never shown in live mode; will retry on your next phrase.`,
@@ -234,7 +296,7 @@ export class TranscriptionPipeline extends EventEmitter {
       if (fellBack) {
         this.emit('status', {
           state: 'warning',
-          message: `Switched to ${provider} (primary provider rate-limited or unavailable). Captions continue.`,
+          message: `Switched to ${PROVIDER_LABELS[provider] ?? provider} (primary provider rate-limited or unavailable). Captions continue.`,
         });
       }
 
