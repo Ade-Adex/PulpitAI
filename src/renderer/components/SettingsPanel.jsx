@@ -1,9 +1,24 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { PROVIDERS } from '../lib/providers.js';
+import { api } from '../lib/api.js';
 
 // Modal settings editor. Local form state, saves on close.
 export default function SettingsPanel({ settings, onSave, onClose }) {
   const [form, setForm] = useState(settings);
+
+  // The main process can auto-heal a retired provider model (see the GroQ
+  // fallback in the pipeline) and persist the working one. Re-read the
+  // authoritative settings on mount so the form never shows - and then
+  // re-saves - a model that is already known to be dead.
+  useEffect(() => {
+    let cancelled = false;
+    api.getSettings().then((fresh) => {
+      if (!cancelled && fresh) setForm((f) => ({ ...f, ...fresh }));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const set = (key) => (e) => {
     const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
@@ -44,6 +59,20 @@ export default function SettingsPanel({ settings, onSave, onClose }) {
           <small>Auto = first configured key wins (OpenAI, Gemini, then GroQ — else Demo).</small>
         </label>
 
+        {form.provider === 'auto' && (
+          <p className="hint">
+            Auto uses the first configured key below. Pick a specific provider above to configure
+            only that one.
+          </p>
+        )}
+        {form.provider === 'demo' && (
+          <p className="hint">
+            Demo mode needs no API key — captions are simulated so you can test the mic, VAD and
+            the OBS overlay.
+          </p>
+        )}
+
+        {(form.provider === 'auto' || form.provider === 'gemini') && (
         <fieldset className="fieldset">
           <legend>Google Gemini</legend>
           <label className="field">
@@ -65,7 +94,9 @@ export default function SettingsPanel({ settings, onSave, onClose }) {
             <input type="text" value={form.geminiModel} onChange={set('geminiModel')} />
           </label>
         </fieldset>
+        )}
 
+        {(form.provider === 'auto' || form.provider === 'groq') && (
         <fieldset className="fieldset">
           <legend>GroQ — free tier</legend>
           <label className="field">
@@ -78,22 +109,31 @@ export default function SettingsPanel({ settings, onSave, onClose }) {
               autoComplete="off"
             />
             <small>
-              Free key at <strong>console.groq.com</strong> → <em>API Keys</em>. Whisper transcribes
-              Yoruba; Llama translates to English.
+              Free key at <strong>console.groq.com</strong> → <em>API Keys</em>. Whisper
+              transcribes Yoruba; GPT-OSS translates to English.
             </small>
           </label>
           <div className="field-row">
             <label className="field">
               <span>Transcription model</span>
-              <input type="text" value={form.groqSttModel} onChange={set('groqSttModel')} />
+              <select value={form.groqSttModel} onChange={set('groqSttModel')}>
+                <option value="whisper-large-v3">whisper-large-v3 (recommended)</option>
+                <option value="whisper-large-v3-turbo">whisper-large-v3-turbo</option>
+              </select>
             </label>
             <label className="field">
               <span>Translation model</span>
-              <input type="text" value={form.groqChatModel} onChange={set('groqChatModel')} />
+              <select value={form.groqChatModel} onChange={set('groqChatModel')}>
+                <option value="openai/gpt-oss-120b">GPT-OSS 120B (recommended)</option>
+                <option value="openai/gpt-oss-20b">GPT-OSS 20B</option>
+                <option value="llama-3.1-8b-instant">Llama 3.1 8B Instant</option>
+              </select>
             </label>
           </div>
         </fieldset>
+        )}
 
+        {(form.provider === 'auto' || form.provider === 'openai') && (
         <fieldset className="fieldset">
           <legend>OpenAI — paid</legend>
           <label className="field">
@@ -123,6 +163,7 @@ export default function SettingsPanel({ settings, onSave, onClose }) {
             </label>
           </div>
         </fieldset>
+        )}
 
         <fieldset className="fieldset">
           <legend>Overlay captions</legend>

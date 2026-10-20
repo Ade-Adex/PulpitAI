@@ -13,6 +13,11 @@ import { translateToEnglish } from './translation/openaiTranslator.js';
 // GroQ exposes OpenAI-compatible endpoints, so the existing Whisper +
 // chat-completions clients are reused with this base URL.
 const GROQ_BASE = 'https://api.groq.com/openai/v1';
+// GroQ retires/locks models without much notice (llama-3.3-70b-versatile
+// became Enterprise-only in 2026) — keep known-good alternates so captions
+// survive a rotation. Tried in order after the user's configured model.
+const GROQ_CHAT_FALLBACKS = ['openai/gpt-oss-20b', 'llama-3.1-8b-instant'];
+const GROQ_STT_FALLBACKS = ['whisper-large-v3-turbo'];
 const REAL_PROVIDERS = ['openai', 'gemini', 'groq'];
 const PROVIDER_LABELS = { openai: 'OpenAI', gemini: 'Gemini', groq: 'GroQ', demo: 'Demo' };
 
@@ -86,6 +91,40 @@ export class TranscriptionPipeline extends EventEmitter {
     });
     this.#geminiGate = run.catch(() => {});
     return run;
+  }
+
+  // GroQ rotates/locks models often. Try the configured model first, then
+  // known-good alternates on model_not_found, and auto-heal the saved
+  // setting to whichever model actually worked.
+  async #groqWithFallback(kind, s, impl) {
+    const primary =
+      kind === 'chat'
+        ? s.groqChatModel || 'openai/gpt-oss-120b'
+        : s.groqSttModel || 'whisper-large-v3';
+    const alternates = kind === 'chat' ? GROQ_CHAT_FALLBACKS : GROQ_STT_FALLBACKS;
+    const models = [primary, ...alternates.filter((m) => m !== primary)];
+    let lastErr = null;
+    for (const model of models) {
+      try {
+        const result = await impl(model);
+        if (model !== primary) {
+          try {
+            this.#settings.save(kind === 'chat' ? { groqChatModel: model } : { groqSttModel: model });
+          } catch {
+            // Persisting the auto-heal is best-effort.
+          }
+          console.warn(`[pipeline] GroQ ${kind} model healed to ${model}`);
+        }
+        return result;
+      } catch (err) {
+        lastErr = err;
+        // Only model-availability errors benefit from swapping models —
+        // auth/quota/etc. must bubble up immediately.
+        if (!/model_not_found|does not exist|\(404\)/i.test(String(err?.message))) throw err;
+        console.warn(`[pipeline] GroQ ${kind} model ${model} unavailable, trying next…`);
+      }
+    }
+    throw lastErr;
   }
 
   async #process(audioBlob) {
@@ -167,25 +206,20 @@ export class TranscriptionPipeline extends EventEmitter {
         audioSec = result.durationSec ?? null;
       };
 
-      // GroQ: Whisper transcribes Yoruba, Llama translates (OpenAI-compatible
-      // endpoints via baseUrl), keeping the same two-step shape as OpenAI.
+      // GroQ: Whisper transcribes Yoruba, GPT-OSS/Llama translates
+      // (OpenAI-compatible endpoints via baseUrl), same two-step shape as
+      // OpenAI — with model fallback so a retired model can't stall captions.
       const runGroq = async () => {
-        const stt = await transcribeAudio({
-          apiKey: s.groqApiKey,
-          model: s.groqSttModel || 'whisper-large-v3',
-          audioBlob,
-          baseUrl: GROQ_BASE,
-        });
+        const stt = await this.#groqWithFallback('stt', s, (model) =>
+          transcribeAudio({ apiKey: s.groqApiKey, model, audioBlob, baseUrl: GROQ_BASE }),
+        );
         yoruba = stt.text;
         audioSec = stt.durationSec ?? null;
         if (yoruba) {
           this.emit('status', { state: 'translating' });
-          english = await translateToEnglish({
-            apiKey: s.groqApiKey,
-            model: s.groqChatModel || 'llama-3.3-70b-versatile',
-            yorubaText: yoruba,
-            baseUrl: GROQ_BASE,
-          });
+          english = await this.#groqWithFallback('chat', s, (model) =>
+            translateToEnglish({ apiKey: s.groqApiKey, model, yorubaText: yoruba, baseUrl: GROQ_BASE }),
+          );
         }
       };
 

@@ -54,7 +54,7 @@ npm run dev        # starts Vite + Electron together
      the key's project.
    - **GroQ — free tier:** paste a key from
      [console.groq.com](https://console.groq.com) (**API Keys**). Whisper transcribes
-     Yoruba, Llama translates to English.
+     Yoruba; GPT-OSS translates to English (model fallback included).
    - **OpenAI** (paid): paste an `sk-...` key — Whisper + gpt-4o-mini.
    - **Demo:** no key at all — simulated captions to test mic/VAD/overlay.
 2. Pick your audio source (mic / system audio / both).

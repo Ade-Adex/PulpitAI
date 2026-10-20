@@ -3,7 +3,7 @@
 export const PROVIDERS = [
   { value: 'auto', label: 'Auto (recommended)' },
   { value: 'gemini', label: 'Google Gemini' },
-  { value: 'groq', label: 'GroQ — free tier (Whisper + Llama)' },
+  { value: 'groq', label: 'GroQ — free tier (Whisper + GPT-OSS)' },
   { value: 'openai', label: 'OpenAI' },
   { value: 'demo', label: 'Demo (no key, simulated)' },
 ];

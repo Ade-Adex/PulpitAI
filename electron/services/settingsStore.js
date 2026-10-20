@@ -14,10 +14,10 @@ const DEFAULTS = {
   geminiApiKey: '',
   geminiModel: 'gemini-3.8-flash',
   // GroQ (console.groq.com) — OpenAI-compatible free tier:
-  // Whisper transcribes Yoruba, Llama translates to English.
+  // Whisper transcribes Yoruba; GPT-OSS translates to English.
   groqApiKey: '',
   groqSttModel: 'whisper-large-v3',
-  groqChatModel: 'llama-3.3-70b-versatile',
+  groqChatModel: 'openai/gpt-oss-120b',
   // Caption behaviour
   showYorubaLine: true,
   captionPosition: 'bottom', // 'bottom' | 'top'
@@ -63,6 +63,8 @@ export class SettingsStore {
     const raw = { ...stored };
     if (raw.vadSilenceMs === 400) raw.vadSilenceMs = 300;
     if (raw.maxUtteranceMs === 6000) raw.maxUtteranceMs = 5000;
+    // v0.1.11: llama-3.3-70b-versatile moved to Enterprise-only on GroQ.
+    if (raw.groqChatModel === 'llama-3.3-70b-versatile') raw.groqChatModel = 'openai/gpt-oss-120b';
     return raw;
   }
 
