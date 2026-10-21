@@ -303,6 +303,28 @@ export default function HymnBrowser({ onBack, onSettings, settings }) {
     api.saveSettings({ currentChurch: id }).catch(() => {});
   };
 
+  const handleDeleteChurch = async () => {
+    if (!currentChurchId) return;
+    const target = churches.find((c) => String(c.id) === String(currentChurchId));
+    const name = target?.name ?? target?.id ?? 'this church';
+    if (!window.confirm(`Delete "${name}" from the hymn module?`)) return;
+    const nextChurches = churches.filter(
+      (c) => String(c.id) !== String(currentChurchId),
+    );
+    const nextCurrent = nextChurches[0]?.id ?? null;
+    setChurches(nextChurches);
+    setCurrentChurchId(nextCurrent);
+    setHymns([]);
+    setPage(1);
+    setSelectedHymn(null);
+    setError(null);
+    try {
+      await api.saveSettings({ churches: nextChurches, currentChurch: nextCurrent });
+    } catch {
+      // ignore
+    }
+  };
+
   const handleBgUpload = useCallback((e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -357,17 +379,29 @@ export default function HymnBrowser({ onBack, onSettings, settings }) {
         )}
         <div className="hymn__browser__top__meta">
           {churches.length > 0 && (
-            <select
-              className="hymn__browser__top__church"
-              value={currentChurchId ?? ''}
-              onChange={(e) => setCurrentChurchId(e.target.value)}
-            >
-              {churches.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name ?? c.id}
-                </option>
-              ))}
-            </select>
+            <>
+              <select
+                className="hymn__browser__top__church"
+                value={currentChurchId ?? ''}
+                onChange={handleChurchChange}
+              >
+                {churches.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name ?? c.id}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                className="btn btn--ghost btn--small"
+                aria-label="Delete selected church"
+                title="Delete selected church"
+                onClick={handleDeleteChurch}
+                disabled={!currentChurchId}
+              >
+                🗑️
+              </button>
+            </>
           )}
           <span className="hymn__browser__top__subtitle">
             {currentChurchId ? 'Hymns' : 'Select a church to begin'}

@@ -1182,3 +1182,122 @@ html[data-theme='light'] .hymn__lyrics {
   background: rgba(77, 163, 255, 0.1);
   margin-left: 8px;
 }
+
+/* ================= Hymn module — professional restyle ================= */
+.hymn__browser {
+  background: linear-gradient(180deg, var(--bg-panel, #161a22) 0%, var(--bg, #0e1116) 100%);
+}
+.hymn__browser__top {
+  background: rgba(22, 26, 34, 0.85);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border, #2a2f3a);
+  padding: 12px 16px;
+  gap: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+.hymn__browser__top__church {
+  background: var(--bg-elevated, #1f2430);
+  color: var(--text, #e6e8ec);
+  border: 1px solid var(--border, #2a2f3a);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-weight: 600;
+  min-width: 160px;
+}
+.hymn__browser__top__search__input {
+  background: var(--bg-elevated, #1f2430);
+  border: 1px solid var(--border, #2a2f3a);
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: var(--text, #e6e8ec);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.hymn__browser__top__search__input:focus {
+  outline: none;
+  border-color: var(--accent, #4da3ff);
+  box-shadow: 0 0 0 3px rgba(77, 163, 255, 0.18);
+}
+.hymn__browser__top__subtitle {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--text-dim, #9aa3b2);
+}
+.hymn__card {
+  border-radius: 10px;
+  padding: 14px 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: transform 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+}
+.hymn__card:hover {
+  transform: translateY(-1px);
+  border-color: var(--accent, #4da3ff);
+  box-shadow: 0 6px 16px rgba(77, 163, 255, 0.18);
+}
+.hymn__card__title {
+  font-size: 16px;
+  letter-spacing: -0.2px;
+}
+.hymn__card__number {
+  font-size: 11px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+.hymn__lyrics {
+  background: var(--bg-panel, #161a22);
+  border-left: 1px solid var(--border, #2a2f3a);
+  box-shadow: -16px 0 32px rgba(0, 0, 0, 0.45);
+}
+.hymn__lyrics__title {
+  font-size: 22px;
+  letter-spacing: -0.4px;
+}
+.hymn__verse__line {
+  font-size: 18px;
+  line-height: 1.7;
+}
+.hymn__verse__label {
+  color: var(--accent, #4da3ff);
+  letter-spacing: 1px;
+}
+.hymn__browser__recent__item:hover {
+  background: rgba(77, 163, 255, 0.1);
+}
+.hymn__browser__category {
+  border-radius: 6px;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.hymn__browser__category.is-active {
+  background: var(--accent, #4da3ff);
+  color: #04121f;
+  font-weight: 700;
+}
+.hymn__empty__title {
+  font-size: 18px;
+}
+.hymn__display__title {
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+.hymn__display__number {
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+.hymn__display__verse__line {
+  line-height: 1.6;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+.hymn__display__close,
+.hymn__display__fullscreen-btn {
+  border-radius: 8px;
+  font-weight: 600;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+.hymn__display__close:hover,
+.hymn__display__fullscreen-btn:hover {
+  transform: translateY(-1px);
+}

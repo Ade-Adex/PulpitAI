@@ -47,16 +47,22 @@ export default function ModuleLoader({ modules = [], progress }) {
       </div>
 
       {pct !== null && (
-        <div style={{ width: 260, height: 6, background: 'rgba(255,255,255,0.1)', borderRadius: 999, overflow: 'hidden' }}>
-          <div
-            style={{
-              width: `${pct}%`,
-              height: '100%',
-              background: 'var(--accent, #4da3ff)',
-              borderRadius: 999,
-              transition: 'width 0.25s ease',
-            }}
-          />
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, width: 300 }}>
+          <div style={{ width: '100%', height: 10, background: 'rgba(255,255,255,0.1)', borderRadius: 999, overflow: 'hidden', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.4)' }}>
+            <div
+              style={{
+                width: `${pct}%`,
+                height: '100%',
+                background: 'linear-gradient(90deg, #ff5f6d 0%, #ffc371 25%, #4da3ff 60%, #3dd598 100%)',
+                borderRadius: 999,
+                transition: 'width 0.2s ease',
+                boxShadow: '0 0 12px rgba(77,163,255,0.6)',
+              }}
+            />
+          </div>
+          <div style={{ fontSize: 13, fontWeight: 600, opacity: 0.85, fontVariantNumeric: 'tabular-nums' }}>
+            {Math.round(pct)}%
+          </div>
         </div>
       )}
 

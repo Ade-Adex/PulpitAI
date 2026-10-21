@@ -115,6 +115,7 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(false)
 
   const [preloading, setPreloading] = useState(false);
+  const [loadProgress, setLoadProgress] = useState(0);
   // Module selection - Req #1. enabled: modules chosen on the splash.
   // activeTab: which enabled module is currently shown.
   const [enabled, setEnabled] = useState(null)
@@ -163,6 +164,25 @@ export default function App() {
     }
   }, [enabled])
 
+// Drive the loading progress range from 0 -> 100, then close the loader.
+  useEffect(() => {
+    if (!preloading) {
+      setLoadProgress(0);
+      return;
+    }
+    setLoadProgress(0);
+    let p = 0;
+    const id = setInterval(() => {
+      p = Math.min(100, p + 4);
+      setLoadProgress(p);
+      if (p >= 100) {
+        clearInterval(id);
+        setTimeout(() => setPreloading(false), 250);
+      }
+    }, 40);
+    return () => clearInterval(id);
+  }, [preloading]);
+
   // Render logic — show splash until settings load AND a module set is chosen.
   if (!settings || enabled === null) {
     return (
@@ -182,7 +202,6 @@ export default function App() {
           setActiveTab(filtered[0])
           setPreviousModules(filtered)
           setPreloading(true)
-          setTimeout(() => setPreloading(false), 600)
           try {
             localStorage.setItem('pulpitai-last-modules', JSON.stringify(filtered))
           } catch {
@@ -194,7 +213,7 @@ export default function App() {
   }
 
   if (preloading) {
-    return <ModuleLoader modules={enabled || []} />;
+    return <ModuleLoader modules={enabled || []} progress={loadProgress} />;
   }
 
   const changeModules = () => {
