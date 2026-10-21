@@ -7,6 +7,7 @@ import AppHeader from './components/AppHeader.jsx'
 import AudioSourcePanel from './components/AudioSourcePanel.jsx'
 import ControlBar from './components/ControlBar.jsx'
 import HymnBrowser from './components/HymnBrowser.jsx'
+import ModuleLoader from './components/ModuleLoader.jsx';
 import OverlayPanel from './components/OverlayPanel.jsx'
 import PipelineStatus from './components/PipelineStatus.jsx'
 import SettingsPanel from './components/SettingsPanel.jsx'
@@ -113,6 +114,7 @@ export default function App() {
 
   const [showSettings, setShowSettings] = useState(false)
 
+  const [preloading, setPreloading] = useState(false);
   // Module selection - Req #1. enabled: modules chosen on the splash.
   // activeTab: which enabled module is currently shown.
   const [enabled, setEnabled] = useState(null)
@@ -179,6 +181,8 @@ export default function App() {
           setEnabled(filtered)
           setActiveTab(filtered[0])
           setPreviousModules(filtered)
+          setPreloading(true)
+          setTimeout(() => setPreloading(false), 600)
           try {
             localStorage.setItem('pulpitai-last-modules', JSON.stringify(filtered))
           } catch {
@@ -187,6 +191,10 @@ export default function App() {
         }}
       />
     )
+  }
+
+  if (preloading) {
+    return <ModuleLoader modules={enabled || []} />;
   }
 
   const changeModules = () => {

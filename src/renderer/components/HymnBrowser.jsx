@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../lib/api.js';
 import HymnDisplay from './HymnDisplay.jsx';
 
@@ -18,9 +18,10 @@ import HymnDisplay from './HymnDisplay.jsx';
  * re-access a song. Each hymn can be sent to the display window (lower third
  * or full screen) for OBS/vMix/projector use.
  */
-export default function HymnBrowser({ onBack, onSettings }) {
+export default function HymnBrowser({ onBack, onSettings, settings }) {
   const [provider, setProvider] = useState(null);
   const [churches, setChurches] = useState([]);
+  const churchesRef = useRef(null);
   const [currentChurchId, setCurrentChurchId] = useState(null);
 
   // Data state
@@ -114,6 +115,7 @@ export default function HymnBrowser({ onBack, onSettings }) {
         if (cancelled) return;
         const savedChurches = settings?.churches ?? [];
         const current = settings?.currentChurch ?? savedChurches[0]?.id ?? null;
+        churchesRef.current = JSON.stringify(savedChurches);
         setChurches(savedChurches);
         setCurrentChurchId(current);
         setRecentSearches(settings?.recentSearches ?? []);
@@ -128,6 +130,72 @@ export default function HymnBrowser({ onBack, onSettings }) {
     })();
     return () => { cancelled = true; };
   }, [buildProvider]);
+
+  // Keep the church list in sync with settings passed from the parent (e.g.
+  // after a church is added or deleted in Settings and saved).
+  useEffect(() => {
+    if (!settings) return;
+    const savedChurches = settings.churches ?? [];
+    const nextJson = JSON.stringify(savedChurches);
+    if (churchesRef.current !== nextJson) {
+      churchesRef.current = nextJson;
+      setChurches(savedChurches);
+    }
+    setCurrentChurchId((prev) => {
+      const stillExists =
+        prev != null && savedChurches.some((c) => String(c.id) === String(prev));
+      if (stillExists) return prev;
+      const next = settings.currentChurch ?? savedChurches[0]?.id ?? null;
+      if (String(next) !== String(prev)) {
+        setHymns([]);
+        setPage(1);
+        setSelectedHymn(null);
+        setError(null);
+      }
+      return next;
+    });
+  }, [settings]);
+
+  // Refresh churches when settings change externally (e.g. a church was
+  // added/removed in Settings). Re-read on window focus and keep the selector
+  // in sync, falling back to the first remaining church if the current one
+  // was deleted.
+  useEffect(() => {
+    let cancelled = false;
+    const refresh = async () => {
+      try {
+        const settings = await api.getSettings();
+        if (cancelled) return;
+        const savedChurches = settings?.churches ?? [];
+        const nextJson = JSON.stringify(savedChurches);
+        if (churchesRef.current !== nextJson) {
+          churchesRef.current = nextJson;
+          setChurches(savedChurches);
+        }
+        setCurrentChurchId((prev) => {
+          const stillExists =
+            prev != null && savedChurches.some((c) => String(c.id) === String(prev));
+          if (stillExists) return prev;
+          const next = settings?.currentChurch ?? savedChurches[0]?.id ?? null;
+          if (String(next) !== String(prev)) {
+            setHymns([]);
+            setPage(1);
+            setSelectedHymn(null);
+            setError(null);
+          }
+          return next;
+        });
+      } catch {
+        // ignore refresh failures
+      }
+    };
+    const onFocus = () => refresh();
+    window.addEventListener('focus', onFocus);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('focus', onFocus);
+    };
+  }, []);
 
   // Load categories
   useEffect(() => {

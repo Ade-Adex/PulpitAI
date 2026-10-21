@@ -1,7 +1,0 @@
-
-> pulpit-ai@0.1.11 smoke
-> electron . --smoke-test
-
-
-[overlay] listening on http://127.0.0.1:8787/overlay (lan: http://10.88.130.122:8787/overlay)
-[smoke] overlay server listening on http://127.0.0.1:8787/overlay

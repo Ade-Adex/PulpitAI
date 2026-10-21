@@ -414,10 +414,58 @@ export default function SettingsPanel({ settings, onSave, onClose }) {
 
           {form.churches?.length > 0 && (
             <div style={{ marginTop: 8 }}>
-              <small style={{ color: 'var(--text-dim)' }}>
-                Saved churches:{' '}
-                {form.churches.map((c, i) => (i > 0 ? ', ' : '') + c.name).join('')}
+              <small style={{ color: 'var(--text-dim)', display: 'block', marginBottom: 6 }}>
+                Saved churches:
               </small>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {form.churches.map((c) => (
+                  <li
+                    key={c.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 8,
+                      padding: '6px 8px',
+                      border: '1px solid var(--border, #2a2f3a)',
+                      borderRadius: 6,
+                      background: 'var(--surface, #161a22)',
+                    }}
+                  >
+                    <span style={{ fontSize: 13 }}>
+                      {c.name}
+                      {String(form.currentChurch) === String(c.id) && (
+                        <span style={{ marginLeft: 6, fontSize: 11, color: 'var(--accent, #4da3ff)' }}>
+                          (current)
+                        </span>
+                      )}
+                    </span>
+                    <button
+                      type="button"
+                      className="btn btn--ghost btn--small"
+                      onClick={() => {
+                        setForm((f) => {
+                          const nextChurches = (f.churches ?? []).filter(
+                            (x) => String(x.id) !== String(c.id),
+                          );
+                          let nextCurrent = f.currentChurch;
+                          if (String(f.currentChurch) === String(c.id)) {
+                            nextCurrent = nextChurches[0]?.id ?? null;
+                          }
+                          return {
+                            ...f,
+                            churches: nextChurches,
+                            currentChurch: nextCurrent,
+                          };
+                        });
+                      }}
+                      aria-label={`Delete ${c.name}`}
+                    >
+                      Delete
+                    </button>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
           <div style={{ marginTop: 24 }}>

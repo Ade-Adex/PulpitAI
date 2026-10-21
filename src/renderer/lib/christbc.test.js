@@ -191,6 +191,28 @@ describe('ChristBCHymnProvider', () => {
     assert.equal(result.error.retryable, true);
   });
 
+  test('requests include the PulpitAI production Origin header', async () => {
+    const cap = capture((u, h) => jsonResponse({ ok: true, data: { hymns: [], pagination: {} } }));
+    const provider = new ChristBCHymnProvider({
+      apiKey: 'key',
+      environment: 'live',
+      fetch: cap.fetch,
+    });
+    const result = await provider.listHymns();
+    assert.equal(result.ok, true);
+    assert.equal(cap.headers['Origin'], 'https://pulpitai.app');
+  });
+
+  test('origin can be overridden per provider', async () => {
+    const cap = capture((u, h) => jsonResponse({ ok: true, data: ['Adoration'] }));
+    const provider = new ChristBCHymnProvider({
+      apiKey: 'key',
+      origin: 'https://example.com',
+      fetch: cap.fetch,
+    });
+    await provider.getCategories();
+    assert.equal(cap.headers['Origin'], 'https://example.com');
+  });
   test('createChristBCProvider from settings', () => {
     const settings = {
       christbcApiKey: 'ck_live_xyz',

@@ -25,6 +25,12 @@
 
 const DEFAULT_BASE_URL = 'https://dev.christbcogbomoso.org';
 
+// Canonical origin the PulpitAI desktop app presents to the Christ BC gateway.
+// The production Electron build is allowlisted with this origin on the API key
+// (rather than relying on the "no origin = unrestricted" server-to-server
+// bypass), so origin validation stays intact. Register this origin on the key
+// in the developer portal.
+export const PULPITAI_ORIGIN = 'https://pulpitai.app';
 export const CHRISTBC_BASE_URL_DEFAULT = DEFAULT_BASE_URL;
 export const CHRISTBC_ENVIRONMENTS = ['live', 'testing', 'integration'];
 
@@ -52,7 +58,7 @@ export const ERROR_HINTS = {
   [ChristBCErrorCode.RATE_LIMITED]:
     'Too many requests to the Christ BC API. Retry shortly.',
   [ChristBCErrorCode.ORIGIN_NOT_ALLOWED]:
-    'This key is restricted to specific website origins. Desktop (PulpitAI) requests are allowed; if you still see this, the key may be invalid or revoked.',
+    'This key is restricted to specific website origins. Allowlist the PulpitAI production origin (https://pulpitai.app) on the key in the developer portal; if it is already allowlisted, the key may be invalid or revoked.',
   [ChristBCErrorCode.NOT_FOUND]:
     'The requested hymn was not found.',
   [ChristBCErrorCode.INTERNAL_ERROR]:
@@ -107,17 +113,20 @@ export class ChristBCHymnProvider {
   #baseUrl;
   #apiKey;
   #environment;
+  #origin;
   #fetch;
 
   constructor({
     baseUrl = DEFAULT_BASE_URL,
     apiKey = '',
     environment = 'live',
+    origin = PULPITAI_ORIGIN,
     fetch,
   } = {}) {
     this.#baseUrl = (baseUrl || DEFAULT_BASE_URL).replace(/\/+$/, '');
     this.#apiKey = String(apiKey || '');
     this.#environment = environment;
+    this.#origin = origin || PULPITAI_ORIGIN;
     this.#fetch = fetch ?? globalThis.fetch.bind(globalThis);
   }
 
@@ -129,6 +138,10 @@ export class ChristBCHymnProvider {
       [secretHeader]: this.#apiKey,
       'x-christbc-environment': this.#environment,
       Accept: 'application/json',
+      // Present the production Electron origin so the gateway can enforce its
+      // origin restriction instead of treating this as an unrestricted
+      // server-to-server call.
+      Origin: this.#origin,
     };
   }
 
@@ -150,9 +163,8 @@ export class ChristBCHymnProvider {
       response = await this.#fetch(this.#url(path, params).toString(), {
         method: 'GET',
         headers: this.#authHeaders(),
-        // The desktop app sends no browser Origin/Referer. The gateway treats
-        // a key with no allowedOrigins as unrestricted, so server-to-server
-        // calls from Electron succeed without an origin header.
+        // The desktop app presents its production origin (see PULPITAI_ORIGIN)
+        // so the gateway's origin restriction is enforced rather than bypassed.
       });
     } catch (err) {
       return error({
@@ -216,6 +228,7 @@ export function createChristBCProvider(overrides) {
     baseUrl: overrides.christbcBaseUrl,
     apiKey: overrides.christbcApiKey,
     environment: overrides.christbcEnvironment,
+    origin: overrides.christbcOrigin ?? overrides.origin,
   });
 }
 
