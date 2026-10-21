@@ -38,6 +38,9 @@ export default function SettingsPanel({ settings, onSave, onClose }) {
       maxUtteranceMs: Number(form.maxUtteranceMs),
       transcriptFontSize: Number(form.transcriptFontSize),
       alwaysOnTop: Boolean(form.alwaysOnTop),
+      textColor: form.textColor,
+      bgColor: form.bgColor,
+      bgImage: form.bgImage,
     });
     onClose();
   };
@@ -166,6 +169,48 @@ export default function SettingsPanel({ settings, onSave, onClose }) {
         )}
 
         <fieldset className="fieldset">
+          <legend>Christ BC Hymn API</legend>
+          <label className="field">
+            <span>API key</span>
+            <input
+              type="password"
+              value={form.christbcApiKey}
+              onChange={set('christbcApiKey')}
+              placeholder="chbc_live_..."
+              autoComplete="off"
+            />
+            <small>
+              Issued at the <strong>Christ BC Developer Portal</strong> &rarr; API Keys. Pick
+              the <em>Hymn</em> product (api: "hymns"). Stored locally in the app data folder.
+            </small>
+          </label>
+          <div className="field-row">
+            <label className="field">
+              <span>Environment</span>
+              <select value={form.christbcEnvironment} onChange={set('christbcEnvironment')}>
+                <option value="live">Live</option>
+                <option value="testing">Testing</option>
+                <option value="integration">Integration</option>
+              </select>
+            </label>
+            <label className="field">
+              <span>Base URL</span>
+              <input
+                type="text"
+                value={form.christbcBaseUrl}
+                onChange={set('christbcBaseUrl')}
+                placeholder="https://dev.christbcogbomoso.org"
+              />
+            </label>
+          </div>
+          <p className="hint">
+            Endpoints: <code>GET /api/v1/hymns</code>,
+            <code>/api/v1/hymns/categories</code>,
+            <code>/api/v1/hymns/[number]</code>. Rate limit: 600/min (live), 60/min (testing).
+          </p>
+        </fieldset>
+
+        <fieldset className="fieldset">
           <legend>Overlay captions</legend>
           <label className="field field--inline">
             <input type="checkbox" checked={form.showYorubaLine} onChange={set('showYorubaLine')} />
@@ -289,6 +334,133 @@ export default function SettingsPanel({ settings, onSave, onClose }) {
             </label>
           </div>
         </fieldset>
+        <fieldset className="fieldset">
+          <legend>Churches (Hymn module)</legend>
+          <p className="hint">
+            Each church can have its own Christ BC Hymn API key. Switch churches
+            in the Hymn Display module.
+          </p>
+
+          <label className="field">
+            <span>Current church</span>
+            <select value={form.currentChurch ?? ''} onChange={set('currentChurch')}>
+              <option value="">— none selected —</option>
+              {form.churches.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <div className="field-row">
+            <label className="field">
+              <span>Church name</span>
+              <input
+                type="text"
+                value={form.newChurchName ?? ''}
+                onChange={set('newChurchName')}
+                placeholder="e.g. Christ Baptist Church"
+              />
+            </label>
+            <label className="field">
+              <span>API key</span>
+              <input
+                type="password"
+                value={form.newChurchKey ?? ''}
+                onChange={set('newChurchKey')}
+                placeholder="Christ BC hymn key"
+                autoComplete="off"
+              />
+              <small>Key must be issued for api: "hymns"</small>
+            </label>
+          </div>
+          <div className="field-row">
+            <label className="field">
+              <span>Environment</span>
+              <select value={form.newChurchEnv ?? 'live'} onChange={set('newChurchEnv')}>
+                <option value="live">Live</option>
+                <option value="testing">Testing</option>
+                <option value="integration">Integration</option>
+              </select>
+            </label>
+            <label className="field field--inline" style={{ marginTop: 0 }}>
+              <button
+                className="btn btn--primary btn--small"
+                onClick={() => {
+                  const name = form.newChurchName?.trim();
+                  const key = form.newChurchKey?.trim();
+                  if (!name || !key) return;
+                  const church = {
+                    id: String(Date.now()),
+                    name,
+                    christbcApiKey: key,
+                    christbcEnvironment: form.newChurchEnv ?? 'live',
+                    christbcBaseUrl: form.christbcBaseUrl ?? 'https://dev.christbcogbomoso.org',
+                  };
+                  setForm((f) => ({
+                    ...f,
+                    churches: [...(f.churches ?? []), church],
+                    currentChurch: church.id,
+                    newChurchName: '',
+                    newChurchKey: '',
+                  }));
+                }}
+              >
+                Add church
+              </button>
+            </label>
+          </div>
+
+          {form.churches?.length > 0 && (
+            <div style={{ marginTop: 8 }}>
+              <small style={{ color: 'var(--text-dim)' }}>
+                Saved churches:{' '}
+                {form.churches.map((c, i) => (i > 0 ? ', ' : '') + c.name).join('')}
+              </small>
+            </div>
+          )}
+          <div style={{ marginTop: 24 }}>
+            <small style={{ color: 'var(--text-dim)' }}>Hymn Display Appearance</small>
+          </div>
+          <div style={{ marginTop: 8 }}>
+            <label className="field">
+              <span>Text Color</span>
+              <input
+                type="color"
+                value={form.textColor ?? '#ffffff'}
+                onChange={e => setForm(f => ({ ...f, textColor: e.target.value }))}
+                style={{ width: 'auto', height: 30, padding: 0, border: '1px solid var(--border)', background: form.textColor ?? '#ffffff', cursor: 'pointer' }}
+              />
+            </label>
+          </div>
+          <div style={{ marginTop: 8 }}>
+            <label className="field">
+              <span>Background Color</span>
+              <input
+                type="color"
+                value={form.bgColor ?? '#0e1116'}
+                onChange={e => setForm(f => ({ ...f, bgColor: e.target.value }))}
+                style={{ width: 'auto', height: 30, padding: 0, border: '1px solid var(--border)', background: form.bgColor ?? '#0e1116', cursor: 'pointer' }}
+              />
+            </label>
+          </div>
+          <div style={{ marginTop: 8 }}>
+            <label className="field">
+              <span>Background Image</span>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={e => setForm(f => ({ ...f, bgImage: e.target.files[0] }))}
+                style={{ display: 'block', margin: '4px 0' }}
+              />
+              <small style={{ color: 'var(--text-dim)' }}>
+                PNG, JPEG, SVG. Simple image for best results.
+              </small>
+            </label>
+          </div>
+        </fieldset>
+
         <div className="modal__actions">
           <button className="btn btn--ghost" onClick={onClose}>
             Cancel

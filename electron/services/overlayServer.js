@@ -4,6 +4,7 @@
 import express from 'express';
 import http from 'node:http';
 import fs from 'node:fs';
+import os from 'node:os';
 import { WebSocketServer } from 'ws';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -53,6 +54,24 @@ export class OverlayServer {
     return `http://127.0.0.1:${this.port}/overlay`;
   }
 
+  // LAN URL for Req #4 (second PC on the same network, NDI tools, vMix/OBS
+  // browser source on another machine). Falls back to 127.0.0.1 if no LAN IP.
+  get lanUrl() {
+    return `http://${this.lanIp()}:${this.port}/overlay`;
+  }
+
+  lanIp() {
+    try {
+      const nets = os.networkInterfaces();
+      for (const list of Object.values(nets)) {
+        for (const n of list || []) {
+          if (n.family === 'IPv4' && !n.internal) return n.address;
+        }
+      }
+    } catch { /* fall through */ }
+    return '127.0.0.1';
+  }
+
   async start() {
     if (this.#server) return;
 
@@ -89,9 +108,11 @@ export class OverlayServer {
 
     await new Promise((resolve, reject) => {
       this.#server.once('error', reject);
-      this.#server.listen(this.port, '127.0.0.1', resolve);
+      // Req #4: bind all interfaces so a second PC on the LAN (NDI tools,
+      // vMix/OBS browser source, projector PC) can open the overlay URL.
+      this.#server.listen(this.port, '0.0.0.0', resolve);
     });
-    console.log(`[overlay] listening on ${this.url}`);
+    console.log(`[overlay] listening on ${this.url} (lan: ${this.lanUrl})`);
   }
 
   stop() {

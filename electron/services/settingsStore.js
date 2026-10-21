@@ -18,6 +18,24 @@ const DEFAULTS = {
   groqApiKey: '',
   groqSttModel: 'whisper-large-v3',
   groqChatModel: 'openai/gpt-oss-120b',
+
+  // Christ BC Developer Portal — Hymn API key (product: "hymns").
+  // Issued at https://dev.christbcogbomoso.org → API Keys. One key unlocks
+  // the hymnbook endpoints; it cannot call the countries/dial-codes API.
+  christbcApiKey: '',
+  christbcEnvironment: 'live', // 'live' | 'testing' | 'integration'
+  christbcBaseUrl: 'https://dev.christbcogbomoso.org',
+
+  // Module selection (Req #1) — what the user chose on the splash screen.
+  // Only enabled modules are loaded. 'bible' is reserved for the upcoming
+  // Bible module. Persisted so the app can skip the splash on restart.
+  enabledModules: ['captioning'],
+  hasChosenModules: false,
+  // Christ BC key / environment / base URL. `currentChurch` holds the id of
+  // the church currently selected in the hymn browser.
+  churches: [],
+  currentChurch: null,
+
   // Caption behaviour
   showYorubaLine: true,
   captionPosition: 'bottom', // 'bottom' | 'top'
@@ -31,6 +49,17 @@ const DEFAULTS = {
   theme: 'dark', // 'dark' | 'light'
   accentColor: '#4da3ff',
   alwaysOnTop: false,
+
+  // Hymn display (lower third / full screen) — for projector or OBS/vMix
+  displayMode: 'lower-third', // 'lower-third' | 'fullscreen'
+  displayTextColor: '#ffffff',
+  displayBackgroundColor: '#000000',
+  displayBackgroundImage: '', // URL or local path
+  displayFontSize: 48,
+  displayShowVerseLabel: true,
+
+  // Recent hymn searches (up to 10) — stored as [{number, title, firstLine, searchedAt}]
+  recentSearches: [],
 
   // Overlay server
   overlayPort: 8787,

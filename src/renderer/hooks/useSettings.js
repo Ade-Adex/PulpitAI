@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { api } from '../lib/api.js';
 
 export function useSettings() {
-  const [settings, setSettings] = useState(null);
+  const [settings, setSettings] = useState({});
 
   useEffect(() => {
     api.getSettings().then(setSettings);

@@ -7,7 +7,7 @@ const LABELS = {
   error: 'Retry',
 };
 
-export default function ControlBar({ listening, status, onToggle, onOpenSettings }) {
+export default function ControlBar({ listening, status, onToggle, onOpenSettings, onReselectModules }) {
   return (
     <div className="controlbar">
       <button
@@ -20,6 +20,11 @@ export default function ControlBar({ listening, status, onToggle, onOpenSettings
       <button className="btn btn--ghost" onClick={onOpenSettings}>
         ⚙ Settings
       </button>
+      {onReselectModules && (
+        <button className="btn btn--ghost" onClick={onReselectModules}>
+          🧩 Reselect modules
+        </button>
+      )}
     </div>
   );
 }

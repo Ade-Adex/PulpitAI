@@ -5,9 +5,9 @@ import { fileURLToPath } from 'node:url';
 // Dev needs 'unsafe-inline' scripts for Vite/React Fast Refresh's injected
 // bootstrap script; production stays strict ('self' only).
 const CSP_PROD =
-  "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self' blob: mediastream:; connect-src 'self'";
+  "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self' blob: mediastream:; connect-src 'self' https: http: ws: wss:";
 const CSP_DEV =
-  "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self' blob: mediastream:; connect-src 'self' ws://localhost:5173 http://localhost:5173 ws://127.0.0.1:5173 http://127.0.0.1:5173";
+  "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self' blob: mediastream:; connect-src 'self' https: http: ws: wss:";
 
 const CSP_TAG = /(<meta\s+http-equiv="Content-Security-Policy"\s+content=")([^"]*)(")/i;
 
