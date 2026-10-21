@@ -1,0 +1,22 @@
+﻿
+[17:58:01] stray processes cleared
+[17:58:01] removing node_modules...
+[17:58:05] node_modules removed OK
+[17:58:05] lockfile present, 141757 bytes
+[17:58:05] node: v24.18.0
+[17:58:07] npm:  11.16.0
+[17:58:07] starting npm ci...
+
+added 425 packages in 2m
+npm warn allow-scripts 3 packages have install scripts not yet covered by allowScripts:
+npm warn allow-scripts   electron@37.10.3 (postinstall: node install.js)
+npm warn allow-scripts   electron-winstaller@5.4.0 (install: node ./script/select-7z-arch.js)
+npm warn allow-scripts   esbuild@0.25.12 (postinstall: node install.js)
+npm warn allow-scripts
+npm warn allow-scripts Run `npm approve-scripts --allow-scripts-pending` to review, or `npm approve-scripts <pkg>` to allow.
+[17:59:54] EXIT=0
+[17:59:54] BIN_COUNT=99
+[17:59:54] HAS_VITE
+[17:59:54] HAS_ELECTRON
+[17:59:54] MISSING_JEST
+[17:59:54] DONE

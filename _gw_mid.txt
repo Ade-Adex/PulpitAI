@@ -1,0 +1,92 @@
+﻿      ?.trim()
+      .toLowerCase()
+    return {
+      secret: bearer,
+      expectedEnvironment:
+        declared === 'live' || declared === 'testing' ? declared : undefined,
+    }
+  }
+
+  return {}
+}
+
+/** Verify the presented key against the portal database. */
+export async function authenticateApiKey(
+  request: NextRequest,
+): Promise<GatewayAuth> {
+  const { secret, expectedEnvironment } = extractSecrets(request)
+
+  if (!secret) {
+    const ambiguous =
+      request.headers.has(API_HEADER_NAMES.LIVE_SECRET) &&
+      request.headers.has(API_HEADER_NAMES.TESTING_SECRET)
+    return {
+      ok: false,
+      status: 401,
+      code: 'invalid_key',
+      message: ambiguous
+        ? 'Present exactly one API key (live or testing header, not both).'
+        : 'API key is missing',
+    }
+  }
+
+  const key = await dataLayer.verifyApiKey(secret)
+  if (!key) {
+    return {
+      ok: false,
+      status: 401,
+      code: 'invalid_key',
+      message: 'Invalid API key',
+    }
+  }
+
+  if (expectedEnvironment && key.environment !== expectedEnvironment) {
+    return {
+      ok: false,
+      status: 403,
+      code: 'wrong_environment',
+      message: `This key is a ${key.environment} key â€” use the matching header/environment.`,
+      key,
+    }
+  }
+
+
+  const requestOrigin = resolveRequestOrigin(
+    request.headers.get('origin'),
+    request.headers.get('referer'),
+  )
+ 
+  if (requestOrigin && !originMatches(requestOrigin, key.allowedOrigins)) {
+    return {
+      ok: false,
+      status: 403,
+      code: 'origin_not_allowed',
+      message:
+        'This API key is restricted to a registered website and cannot be used from this origin.',
+      key,
+    }
+  }
+
+  if (!allowRequest(key)) {
+    return {
+      ok: false,
+      status: 429,
+      code: 'rate_limited',
+      message: 'Too many requests â€” back off and retry.',
+      key,
+    }
+  }
+
+  return { ok: true, key }
+}
+
+/* ----------------------------- response shape ---------------------------- */
+
+export interface GatewayResult {
+  /** Response body; legacy routes pass raw arrays, v1 routes pass envelopes. */
+  body: unknown
+  status?: number
+}
+
+export interface GatewayRouteContext {
+  params?: Promise<Record<string, string | string[] | undefined>>

@@ -1,0 +1,100 @@
+﻿    if (mode) {
+      setDisplayMode(mode);
+      api.saveSettings({ hymnDisplayMode: mode }).catch(() => {});
+    }
+    setDisplayOpen(true);
+    addToRecent(hymn);
+  }, [addToRecent]);
+
+  // Init: load settings (churches, recents, display prefs) then provider
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const settings = await api.getSettings();
+        if (cancelled) return;
+        const savedChurches = settings?.churches ?? [];
+        const current = settings?.currentChurch ?? savedChurches[0]?.id ?? null;
+        setChurches(savedChurches);
+        setCurrentChurchId(current);
+        setRecentSearches(settings?.recentSearches ?? []);
+        setDisplayMode(settings?.hymnDisplayMode ?? 'fullscreen');
+        setTextColor(settings?.hymnTextColor ?? '#ffffff');
+        setBgColor(settings?.hymnBgColor ?? '#0e1116');
+        setBgImage(settings?.hymnBgImage ?? null);
+        buildProvider(savedChurches, current);
+      } catch (e) {
+        if (!cancelled) setError({ message: String(e?.message || e) });
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [buildProvider]);
+
+  // Load categories
+  useEffect(() => {
+    if (!provider) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await provider.getCategories();
+        if (!cancelled) {
+          if (res.ok) setCategories(res.data ?? []);
+          else setError(res.error);
+        }
+      } catch (e) {
+        if (!cancelled) setError({ message: String(e?.message || e) });
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [provider]);
+
+  // Load hymns â€” Req #2: search by title, number, lyric + category + paging
+  const loadHymns = useCallback(async (opts = {}) => {
+    if (!provider) return;
+    const reset = opts.reset ?? true;
+    const q = opts.q !== undefined ? opts.q : query;
+    const cat = opts.category !== undefined ? opts.category : selectedCategory;
+    const pageNum = reset ? 1 : (opts.page ?? page);
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await provider.listHymns({
+        page: pageNum,
+        limit: 20,
+        q: (q || '').trim() || undefined,
+        category: cat || undefined,
+      });
+      if (res.ok) {
+        const data = res.data ?? {};
+        const list = data.hymns ?? data.items ?? data.results ?? [];
+        setHymns((prev) => (reset ? list : [...prev, ...list]));
+        setPage(pageNum + 1);
+        const pagination = data.pagination ?? {};
+        setHasMore(pagination.hasMore ?? list.length === 20);
+        if ((q || '').trim()) {
+          setRecentSearches((prev) => {
+            const term = (q || '').trim();
+            const filtered = (prev || []).filter((r) => (r.label || '') !== term);
+            const next = [{ number: null, label: term, searchedAt: Date.now() }, ...filtered].slice(0, 10);
+            api.saveSettings({ recentSearches: next }).catch(() => {});
+            return next;
+          });
+        }
+      } else {
+        if (reset) setHymns([]);
+        setError(res.error);
+      }
+    } catch (e) {
+      setError({ message: String(e?.message || e) });
+    } finally {
+      setLoading(false);
+    }
+  }, [provider, page, query, selectedCategory]);
+
+  const searchHymns = useCallback((term, pageNum = 1) => {
+    const t = (term ?? '').trim();
+    setQuery(t);
+    setPage(pageNum);
+    return loadHymns({ reset: pageNum === 1, q: t, page: pageNum });
+  }, [loadHymns]);
+

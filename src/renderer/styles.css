@@ -57,6 +57,14 @@ body {
   color: var(--accent);
 }
 
+.splash__logo {
+  width: 60px;
+  height: 60px;
+  align-self: center;
+  border-radius: 9px;
+  box-shadow: 0 0 10px rgba(77, 163, 255, 0.35);
+}
+
 .header__logo {
   width: 34px;
   height: 34px;
@@ -706,7 +714,7 @@ input[type='color']::-webkit-color-swatch {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 40px 48px;
-  width: min(520px, 92vw);
+  width: min(620px, 92vw);
   display: flex;
   flex-direction: column;
   gap: 26px;

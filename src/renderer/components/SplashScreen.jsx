@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from 'react'
 
 /**
  * Splash / module-selection screen — Req #1.
@@ -34,36 +34,42 @@ const MODULES = [
     icon: '📖',
     soon: true,
   },
-];
+]
 
 export default function SplashScreen({ initial = [], onStart, onCancel }) {
-  const [selected, setSelected] = useState(() =>
-    new Set(initial.filter((m) => m !== 'bible')),
-  );
+  const [selected, setSelected] = useState(
+    () => new Set(initial.filter((m) => m !== 'bible')),
+  )
 
   const toggle = (id) => {
     setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
 
-  const canStart = selected.size > 0;
+  const canStart = selected.size > 0
 
   return (
     <div className="splash">
       <div className="splash__card">
         <div className="splash__brand">
-          <div className="splash__logo">P</div>
-          <div className="splash__title">Pulpit<span className="splash__accent">AI</span></div>
-          <div className="splash__subtitle">Pick what to load — only that runs.</div>
+          {/* <div className="splash__logo">P</div> */}
+          <img className="splash__logo" src="./logo.png" alt="PulpitAI logo" />
+
+          <div className="splash__title">
+            Pulpit<span className="splash__accent">AI</span>
+          </div>
+          <div className="splash__subtitle">
+            Pick what to load — only that runs.
+          </div>
         </div>
 
         <div className="splash__modules">
           {MODULES.map((m) => {
-            const checked = selected.has(m.id);
+            const checked = selected.has(m.id)
             return (
               <label
                 key={m.id}
@@ -84,9 +90,11 @@ export default function SplashScreen({ initial = [], onStart, onCancel }) {
                   </div>
                   <div className="splash__module__desc">{m.desc}</div>
                 </div>
-                <span className="splash__module__tick">{checked ? '✓' : ''}</span>
+                <span className="splash__module__tick">
+                  {checked ? '✓' : ''}
+                </span>
               </label>
-            );
+            )
           })}
         </div>
 
@@ -95,7 +103,9 @@ export default function SplashScreen({ initial = [], onStart, onCancel }) {
           disabled={!canStart}
           onClick={() => onStart([...selected])}
         >
-          {canStart ? `Load ${selected.size} module${selected.size > 1 ? 's' : ''} →` : 'Tick at least one module'}
+          {canStart
+            ? `Load ${selected.size} module${selected.size > 1 ? 's' : ''} →`
+            : 'Tick at least one module'}
         </button>
 
         {onCancel && (
@@ -113,5 +123,5 @@ export default function SplashScreen({ initial = [], onStart, onCancel }) {
         </div>
       </div>
     </div>
-  );
+  )
 }
