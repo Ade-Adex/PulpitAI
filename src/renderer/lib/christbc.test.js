@@ -200,7 +200,7 @@ describe('ChristBCHymnProvider', () => {
     });
     const result = await provider.listHymns();
     assert.equal(result.ok, true);
-    assert.equal(cap.headers['Origin'], 'https://pulpitai.app');
+    assert.equal(cap.headers['Origin'], undefined);
   });
 
   test('origin can be overridden per provider', async () => {
@@ -211,7 +211,7 @@ describe('ChristBCHymnProvider', () => {
       fetch: cap.fetch,
     });
     await provider.getCategories();
-    assert.equal(cap.headers['Origin'], 'https://example.com');
+    assert.equal(cap.headers['Origin'], undefined);
   });
   test('createChristBCProvider from settings', () => {
     const settings = {

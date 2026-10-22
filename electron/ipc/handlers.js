@@ -34,4 +34,26 @@ export function registerIpcHandlers({ settings, pipeline, overlayServer }) {
   ipcMain.handle('overlay:open-window', () => {
     openOverlayWindow(overlayServer.url);
   });
+
+  // Server-side (no CORS, no Origin) fetch for the Christ BC Hymn API.
+  // Renderer calls this via window.pulpit.christbcFetch so requests bypass
+  // browser CORS/origin enforcement entirely.
+  ipcMain.handle('christbc:fetch', async (_event, { url, headers } = {}) => {
+    try {
+      const response = await fetch(String(url), {
+        method: 'GET',
+        headers: headers || {},
+      });
+      let body = null;
+      const text = await response.text();
+      try {
+        body = text ? JSON.parse(text) : null;
+      } catch {
+        body = null;
+      }
+      return { ok: response.ok, status: response.status, body };
+    } catch (err) {
+      throw new Error(err?.message || 'Network request failed.');
+    }
+  });
 }

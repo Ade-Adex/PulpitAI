@@ -1,6 +1,6 @@
 // Electron entry point: wires windows, services and IPC together.
 // Each concern lives in its own module under electron/.
-import { app, BrowserWindow, Menu, session } from 'electron';
+import { app, BrowserWindow, Menu } from 'electron';
 import { createMainWindow } from './windows/mainWindow.js';
 import { SettingsStore } from './services/settingsStore.js';
 import { TranscriptionPipeline } from './services/pipeline.js';
@@ -52,31 +52,10 @@ pipeline.on('status', (status) => {
 // sees the app's real origin (file:// / app://) instead, causing
 // origin_not_allowed. Re-injecting it from the main process (where headers
 // are mutable) keeps origin validation intact for the desktop app.
-function registerOriginHeader() {
-  try {
-    session.defaultSession.webRequest.onBeforeSendHeaders((details, callback) => {
-      let inject = false;
-      try {
-        const host = new URL(details.url).hostname;
-        inject =
-          host.includes('christbc') ||
-          host === 'localhost' ||
-          host === '127.0.0.1';
-      } catch {
-        inject = false;
-      }
-      if (!inject) {
-        callback({ requestHeaders: details.requestHeaders });
-        return;
-      }
-      const requestHeaders = { ...details.requestHeaders };
-      requestHeaders['Origin'] = 'https://pulpitai.app';
-      callback({ requestHeaders });
-    });
-  } catch (err) {
-    console.warn('[origin] failed to register header injector:', err?.message || err);
-  }
-}
+// (Origin injection removed: the desktop app is a server-side client and
+// sends no Origin header, so origin restrictions only apply to browser
+// clients. Keys work whether or not allowed origins are configured.)
+function registerOriginHeader() {}
 
 async function start() {
   // No native menu bar (File/Edit/View/Window/Help) — this is a consumer

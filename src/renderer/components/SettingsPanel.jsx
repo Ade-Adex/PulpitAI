@@ -169,48 +169,6 @@ export default function SettingsPanel({ settings, onSave, onClose }) {
         )}
 
         <fieldset className="fieldset">
-          <legend>Christ BC Hymn API</legend>
-          <label className="field">
-            <span>API key</span>
-            <input
-              type="password"
-              value={form.christbcApiKey}
-              onChange={set('christbcApiKey')}
-              placeholder="chbc_live_..."
-              autoComplete="off"
-            />
-            <small>
-              Issued at the <strong>Christ BC Developer Portal</strong> &rarr; API Keys. Pick
-              the <em>Hymn</em> product (api: "hymns"). Stored locally in the app data folder.
-            </small>
-          </label>
-          <div className="field-row">
-            <label className="field">
-              <span>Environment</span>
-              <select value={form.christbcEnvironment} onChange={set('christbcEnvironment')}>
-                <option value="live">Live</option>
-                <option value="testing">Testing</option>
-                <option value="integration">Integration</option>
-              </select>
-            </label>
-            <label className="field">
-              <span>Base URL</span>
-              <input
-                type="text"
-                value={form.christbcBaseUrl}
-                onChange={set('christbcBaseUrl')}
-                placeholder="https://dev.christbcogbomoso.org"
-              />
-            </label>
-          </div>
-          <p className="hint">
-            Endpoints: <code>GET /api/v1/hymns</code>,
-            <code>/api/v1/hymns/categories</code>,
-            <code>/api/v1/hymns/[number]</code>. Rate limit: 600/min (live), 60/min (testing).
-          </p>
-        </fieldset>
-
-        <fieldset className="fieldset">
           <legend>Overlay captions</legend>
           <label className="field field--inline">
             <input type="checkbox" checked={form.showYorubaLine} onChange={set('showYorubaLine')} />

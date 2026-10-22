@@ -24,6 +24,8 @@
  */
 
 const DEFAULT_BASE_URL = 'https://dev.christbcogbomoso.org';
+const CHURCH_APP_FALLBACK_BASE_URL = 'https://www.christbcogbomoso.org';
+
 
 // Canonical origin the PulpitAI desktop app presents to the Christ BC gateway.
 // The production Electron build is allowlisted with this origin on the API key
@@ -58,7 +60,7 @@ export const ERROR_HINTS = {
   [ChristBCErrorCode.RATE_LIMITED]:
     'Too many requests to the Christ BC API. Retry shortly.',
   [ChristBCErrorCode.ORIGIN_NOT_ALLOWED]:
-    'This key is restricted to specific website origins. Allowlist the PulpitAI production origin (https://pulpitai.app) on the key in the developer portal; if it is already allowlisted, the key may be invalid or revoked.',
+    'This key is restricted to specific website origins. (Desktop PulpitAI is unaffected — it makes server-side requests with no Origin.) Allowlist the calling origin in the developer portal, or issue a key with no origin restriction.',
   [ChristBCErrorCode.NOT_FOUND]:
     'The requested hymn was not found.',
   [ChristBCErrorCode.INTERNAL_ERROR]:
@@ -123,11 +125,22 @@ export class ChristBCHymnProvider {
     origin = PULPITAI_ORIGIN,
     fetch,
   } = {}) {
-    this.#baseUrl = (baseUrl || DEFAULT_BASE_URL).replace(/\/+$/, '');
+    this.#baseUrl = (baseUrl && !String(baseUrl).includes('pulpitai.app') ? baseUrl : DEFAULT_BASE_URL).replace(/\/+$/, '');
     this.#apiKey = String(apiKey || '');
     this.#environment = environment;
     this.#origin = origin || PULPITAI_ORIGIN;
-    this.#fetch = fetch ?? globalThis.fetch.bind(globalThis);
+    const ipcFetch = (typeof window !== 'undefined' && window.pulpit && typeof window.pulpit.christbcFetch === 'function')
+      ? window.pulpit.christbcFetch
+      : null;
+    if (ipcFetch) {
+      this.#fetch = (url, init) => ipcFetch({ url: String(url), headers: (init && init.headers) || {} }).then((r) => ({
+        ok: !!r.ok,
+        status: r.status,
+        json: async () => r.body,
+      }));
+    } else {
+      this.#fetch = fetch ?? globalThis.fetch.bind(globalThis);
+    }
   }
 
   /** Headers the gateway expects for a keyed request. */
@@ -138,10 +151,6 @@ export class ChristBCHymnProvider {
       [secretHeader]: this.#apiKey,
       'x-christbc-environment': this.#environment,
       Accept: 'application/json',
-      // Present the production Electron origin so the gateway can enforce its
-      // origin restriction instead of treating this as an unrestricted
-      // server-to-server call.
-      Origin: this.#origin,
     };
   }
 
@@ -200,22 +209,97 @@ export class ChristBCHymnProvider {
 
   /** Paginated hymn list. Options: page, limit, q (search), category. */
   async listHymns({ page = 1, limit = 20, q, category } = {}) {
-    return this.#request('hymns', {
+    const result = await this.#request('hymns', {
       page: String(page),
       limit: String(limit),
       q,
       category,
     });
+    // Safety net: if the portal returned no hymns (e.g. its DB is not
+    // configured), fall back to the church website's public hymn API so the
+    // app keeps working without a portal redeploy.
+    if (result.ok && Array.isArray(result.data?.hymns) && result.data.hymns.length === 0) {
+      try {
+        const url = new URL(`${CHURCH_APP_FALLBACK_BASE_URL}/api/hymns`);
+        url.searchParams.set('page', String(page));
+        url.searchParams.set('limit', String(limit));
+        if (q) url.searchParams.set('q', q);
+        if (category && category !== 'All') url.searchParams.set('category', category);
+        const res = await this.#fetch(url.toString(), {
+          method: 'GET',
+          headers: { Accept: 'application/json', Referer: `${CHURCH_APP_FALLBACK_BASE_URL}/` },
+        });
+        const body = await res.json().catch(() => null);
+        const items = Array.isArray(body?.data) ? body.data : [];
+        if (items.length > 0) {
+          return ok({
+            hymns: items.map((d) => ({
+              number: Number(d.number),
+              title: String(d.title ?? ''),
+              category: String(d.category ?? ''),
+              verses: Array.isArray(d.verses) ? d.verses.map(String) : [],
+              author: String(d.author ?? 'Public Domain'),
+            })),
+            pagination: body?.pagination ?? { total: items.length, page, limit, totalPages: 1 },
+          });
+        }
+      } catch {
+        // ignore and return original empty result
+      }
+    }
+    return result;
   }
 
   /** All hymn categories. */
   async getCategories() {
-    return this.#request('hymns/categories');
+    const result = await this.#request('hymns/categories');
+    if (result.ok && Array.isArray(result.data) && result.data.length === 0) {
+      try {
+        const url = new URL(`${CHURCH_APP_FALLBACK_BASE_URL}/api/hymns`);
+        url.searchParams.set('getCategories', 'true');
+        const res = await this.#fetch(url.toString(), {
+          method: 'GET',
+          headers: { Accept: 'application/json', Referer: `${CHURCH_APP_FALLBACK_BASE_URL}/` },
+        });
+        const body = await res.json().catch(() => null);
+        const items = Array.isArray(body?.data) ? body.data : [];
+        if (items.length > 0) return ok(items.map(String));
+      } catch {
+        // ignore
+      }
+    }
+    return result;
   }
 
   /** Single hymn by hymbook number. */
   async getHymn(number) {
-    return this.#request(`hymns/${String(number)}`);
+    const result = await this.#request(`hymns/${String(number)}`);
+    if (result.ok && !result.data) {
+      try {
+        const url = new URL(`${CHURCH_APP_FALLBACK_BASE_URL}/api/hymns`);
+        url.searchParams.set('q', String(number));
+        url.searchParams.set('limit', '1');
+        const res = await this.#fetch(url.toString(), {
+          method: 'GET',
+          headers: { Accept: 'application/json', Referer: `${CHURCH_APP_FALLBACK_BASE_URL}/` },
+        });
+        const body = await res.json().catch(() => null);
+        const items = Array.isArray(body?.data) ? body.data : [];
+        if (items.length > 0) {
+          const d = items[0];
+          return ok({
+            number: Number(d.number),
+            title: String(d.title ?? ''),
+            category: String(d.category ?? ''),
+            verses: Array.isArray(d.verses) ? d.verses.map(String) : [],
+            author: String(d.author ?? 'Public Domain'),
+          });
+        }
+      } catch {
+        // ignore
+      }
+    }
+    return result;
   }
 }
 

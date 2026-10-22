@@ -17,6 +17,9 @@ contextBridge.exposeInMainWorld('pulpit', {
   getOverlayInfo: () => ipcRenderer.invoke('overlay:info'),
   openOverlayWindow: () => ipcRenderer.invoke('overlay:open-window'),
 
+  // Christ BC Hymn API (server-side fetch, bypasses CORS)
+  christbcFetch: (payload) => ipcRenderer.invoke('christbc:fetch', payload),
+
   // Events from main -> renderer
   onSegment: (callback) => {
     const listener = (_event, segment) => callback(segment);
