@@ -18,7 +18,7 @@ import HymnDisplay from './HymnDisplay.jsx';
  * re-access a song. Each hymn can be sent to the display window (lower third
  * or full screen) for OBS/vMix/projector use.
  */
-export default function HymnBrowser({ onBack, onSettings, settings }) {
+export default function HymnBrowser({ onBack, onSettings, settings, compact = false }) {
   const [provider, setProvider] = useState(null);
   const [churches, setChurches] = useState([]);
   const churchesRef = useRef(null);
@@ -353,7 +353,7 @@ export default function HymnBrowser({ onBack, onSettings, settings }) {
           Add a church with a Christ BC Hymn API key in Settings, then return
           here to browse hymns.
         </div>
-        {onSettings && (
+        {onSettings && !compact && (
           <button
             className="btn btn--ghost btn--small"
             onClick={onSettings}
@@ -361,18 +361,20 @@ export default function HymnBrowser({ onBack, onSettings, settings }) {
             ⚙️ Open Settings
           </button>
         )}
-        <button className="btn btn--primary" onClick={onBack}>
-          Reselect modules
-        </button>
+        {onBack && (
+          <button className="btn btn--primary" onClick={onBack}>
+            Reselect modules
+          </button>
+        )}
       </div>
     );
   }
 
   return (
-    <div className="hymn__browser">
+    <div className={`hymn__browser${compact ? ' hymn__browser--compact' : ''}`}>
       {/* Top bar — church selector + prominent search */}
       <header className="hymn__browser__top">
-        {onBack && (
+        {onBack && !compact && (
           <button className="btn btn--ghost btn--small" onClick={onBack}>
             ← Reselect modules
           </button>
@@ -422,7 +424,7 @@ export default function HymnBrowser({ onBack, onSettings, settings }) {
           >
             Search
           </button>
-          {onSettings && (
+          {onSettings && !compact && (
             <button
               className="btn btn--ghost btn--small"
               aria-label="Settings"
@@ -552,7 +554,70 @@ export default function HymnBrowser({ onBack, onSettings, settings }) {
         </aside>
 
         <main className="hymn__browser__main">
-          {/* Recent searches rail — Req #5 (up to 10) */}
+          {/* Search results */}
+          <section className="hymn__browser__results">
+            {loading && (
+              <div className="hymn__loading">Loading hymns…</div>
+            )}
+            {!loading && hymns.length === 0 && !error && (
+              <div className="hymn__empty">
+                <div className="hymn__empty__icon">🎵</div>
+                <div className="hymn__empty__title">
+                  {query.trim() ? 'No hymns found' : 'Loading hymns…'}
+                </div>
+                <div className="hymn__empty__desc">
+                  {query.trim()
+                    ? 'Try a different search term or category.'
+                    : 'Browse the list below, or search by number, title or lyric.'}
+                </div>
+              </div>
+            )}
+            {hymns.map((h) => (
+                  <div
+                    key={h.number ?? h.id}
+                    className="hymn__card"
+                  >
+                    <button
+                      className="hymn__card__main"
+                      onClick={() => loadHymn(h.number ?? h.id)}
+                    >
+                      <div className="hymn__card__number">{h.number ?? '—'}</div>
+                      <div className="hymn__card__title">{h.title ?? 'Untitled'}</div>
+                      {h.firstLine && (
+                        <div className="hymn__card__line">{h.firstLine}</div>
+                      )}
+                      {h.author && (
+                        <div className="hymn__card__author">by {h.author}</div>
+                      )}
+                    </button>
+                    <div className="hymn__card__actions">
+                      <button
+                        className="btn btn--ghost btn--small"
+                        onClick={() => sendToDisplay(h, 'lower')}
+                      >
+                        Lower third
+                      </button>
+                      <button
+                        className="btn btn--ghost btn--small"
+                        onClick={() => sendToDisplay(h, 'fullscreen')}
+                      >
+                        Full screen
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                {hasMore && loading === false && hymns.length > 0 && (
+                  <button
+                    className="btn btn--ghost btn--small"
+                    onClick={() => loadHymns({ reset: false })}
+                  >
+                    Load more
+                  </button>
+                )}
+          </section>
+        </main>
+        {/* Recent searches — full-width bottom rail spanning both columns */}
+        <div className="hymn__browser__recent-bottom">
           <div className="panel hymn__browser__recent">
             <div className="panel__head">
               <h3 className="panel__title">Recent searches (up to 10)</h3>
@@ -599,78 +664,7 @@ export default function HymnBrowser({ onBack, onSettings, settings }) {
               </ul>
             )}
           </div>
-
-          {/* Search results */}
-          <section className="hymn__browser__results">
-            {loading && (
-              <div className="hymn__loading">Loading hymns…</div>
-            )}
-            {!query.trim() ? (
-              <div className="hymn__empty">
-                <div className="hymn__empty__icon">🔍</div>
-                <div className="hymn__empty__title">Search hymns</div>
-                <div className="hymn__empty__desc">
-                  Enter a song number, title, or lyric line. Recent searches
-                  appear above the results.
-                </div>
-              </div>
-            ) : (
-              <>
-                {hymns.length === 0 && !loading && !error && (
-                  <div className="hymn__empty">
-                    <div className="hymn__empty__icon">🔍</div>
-                    <div className="hymn__empty__title">No hymns found</div>
-                    <div className="hymn__empty__desc">
-                      Try a different search term or category.
-                    </div>
-                  </div>
-                )}
-                {hymns.map((h) => (
-                  <div
-                    key={h.number ?? h.id}
-                    className="hymn__card"
-                  >
-                    <button
-                      className="hymn__card__main"
-                      onClick={() => loadHymn(h.number ?? h.id)}
-                    >
-                      <div className="hymn__card__number">{h.number ?? '—'}</div>
-                      <div className="hymn__card__title">{h.title ?? 'Untitled'}</div>
-                      {h.firstLine && (
-                        <div className="hymn__card__line">{h.firstLine}</div>
-                      )}
-                      {h.author && (
-                        <div className="hymn__card__author">by {h.author}</div>
-                      )}
-                    </button>
-                    <div className="hymn__card__actions">
-                      <button
-                        className="btn btn--ghost btn--small"
-                        onClick={() => sendToDisplay(h, 'lower')}
-                      >
-                        Lower third
-                      </button>
-                      <button
-                        className="btn btn--ghost btn--small"
-                        onClick={() => sendToDisplay(h, 'fullscreen')}
-                      >
-                        Full screen
-                      </button>
-                    </div>
-                  </div>
-                ))}
-                {hasMore && loading === false && hymns.length > 0 && (
-                  <button
-                    className="btn btn--ghost btn--small"
-                    onClick={() => loadHymns({ reset: false })}
-                  >
-                    Load more
-                  </button>
-                )}
-              </>
-            )}
-          </section>
-        </main>
+        </div>
       </div>
 
       {/* Lyrics panel (slides in from right, EasyWorship-style) */}

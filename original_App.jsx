@@ -7,6 +7,7 @@ import AppHeader from './components/AppHeader.jsx'
 import AudioSourcePanel from './components/AudioSourcePanel.jsx'
 import ControlBar from './components/ControlBar.jsx'
 import HymnBrowser from './components/HymnBrowser.jsx'
+import ModuleLoader from './components/ModuleLoader.jsx';
 import OverlayPanel from './components/OverlayPanel.jsx'
 import PipelineStatus from './components/PipelineStatus.jsx'
 import SettingsPanel from './components/SettingsPanel.jsx'
@@ -17,7 +18,7 @@ import { useSettings } from './hooks/useSettings.js'
 import { useTranscriber } from './hooks/useTranscriber.js'
 import { effectiveProvider } from './lib/providers.js'
 
-function CaptioningModule({ settings, save, showSettings, setShowSettings }) {
+function CaptioningModule({ settings, save, showSettings, setShowSettings, onReselectModules }) {
   const {
     segments,
     pipelineState,
@@ -56,6 +57,7 @@ function CaptioningModule({ settings, save, showSettings, setShowSettings }) {
         status={capture.status}
         onToggle={listening ? capture.stop : capture.start}
         onOpenSettings={() => setShowSettings(true)}
+        onReselectModules={onReselectModules}
       />
       <main className='layout'>
         <div className='layout__left'>
@@ -112,6 +114,8 @@ export default function App() {
 
   const [showSettings, setShowSettings] = useState(false)
 
+  const [preloading, setPreloading] = useState(false);
+  const [loadProgress, setLoadProgress] = useState(0);
   // Module selection - Req #1. enabled: modules chosen on the splash.
   // activeTab: which enabled module is currently shown.
   const [enabled, setEnabled] = useState(null)
@@ -119,7 +123,18 @@ export default function App() {
 
   // Keep the last chosen module set so the SplashScreen can pre-check them
   // when the user clicks "Change modules" / "Change…" to reselect.
-  const prevModulesRef = useRef(enabled)
+  const [previousModules, setPreviousModules] = useState(() => {
+    try {
+      const saved = localStorage.getItem('pulpitai-last-modules')
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (Array.isArray(parsed)) return parsed
+      }
+    } catch {
+      // ignore malformed JSON
+    }
+    return null
+  })
 
   // Unique marker: NEW-SHELL-v2 - everything below is the lazy-loading shell.
   const __shellV2 = 1
@@ -134,6 +149,7 @@ export default function App() {
         if (Array.isArray(parsed)) {
           setEnabled(parsed)
           setActiveTab(parsed[0])
+          setPreviousModules(parsed)
         }
       } catch {
         // ignore malformed JSON
@@ -148,23 +164,66 @@ export default function App() {
     }
   }, [enabled])
 
+// Drive the loading progress range from 0 -> 100, then close the loader.
+  useEffect(() => {
+    if (!preloading) {
+      setLoadProgress(0);
+      return;
+    }
+    setLoadProgress(0);
+    let p = 0;
+    const id = setInterval(() => {
+      p = Math.min(100, p + 4);
+      setLoadProgress(p);
+      if (p >= 100) {
+        clearInterval(id);
+        setTimeout(() => setPreloading(false), 250);
+      }
+    }, 40);
+    return () => clearInterval(id);
+  }, [preloading]);
+
   // Render logic — show splash until settings load AND a module set is chosen.
   if (!settings || enabled === null) {
     return (
       <SplashScreen
-        initial={enabled || prevModulesRef.current || []}
+        initial={previousModules || []}
+        onCancel={
+          previousModules && previousModules.length
+            ? () => {
+                setEnabled(previousModules)
+                setActiveTab(previousModules[0])
+              }
+            : undefined
+        }
         onStart={(modules) => {
           const filtered = modules.filter(m => m !== 'bible')
           setEnabled(filtered)
           setActiveTab(filtered[0])
+          setPreviousModules(filtered)
+          setPreloading(true)
+          try {
+            localStorage.setItem('pulpitai-last-modules', JSON.stringify(filtered))
+          } catch {
+            // ignore
+          }
         }}
       />
     )
   }
 
+  if (preloading) {
+    return <ModuleLoader modules={enabled || []} progress={loadProgress} />;
+  }
+
   const changeModules = () => {
     // Remember current selection so SplashScreen can pre-check them on reselect.
-    prevModulesRef.current = enabled || []
+    setPreviousModules(enabled || [])
+    try {
+      localStorage.setItem('pulpitai-last-modules', JSON.stringify(enabled || []))
+    } catch {
+      // ignore
+    }
     setActiveTab(null)
     setEnabled(null)
     setShowSettings(false)
@@ -181,6 +240,7 @@ export default function App() {
         save={save}
         showSettings={showSettings}
         setShowSettings={setShowSettings}
+        onReselectModules={changeModules}
       />
     )
   }
@@ -262,7 +322,7 @@ export default function App() {
             className='module-tab module-tab--change'
             onClick={changeModules}
           >
-            Change...
+            Change modules
           </button>
         </nav>
       )}
@@ -272,7 +332,7 @@ export default function App() {
             className='module-tab module-tab--change'
             onClick={changeModules}
           >
-            All modules
+            Reselect modules
           </button>
         </nav>
       )}
@@ -282,6 +342,7 @@ export default function App() {
           save={save}
           showSettings={showSettings}
           setShowSettings={setShowSettings}
+          onReselectModules={changeModules}
         />
       )}
       {activeTab === 'hymns' && (
