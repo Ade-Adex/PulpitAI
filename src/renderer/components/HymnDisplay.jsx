@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { MdClose, MdFullscreen, MdFullscreenExit } from 'react-icons/md';
 import { api } from '../lib/api.js';
 
 /**
@@ -82,7 +83,7 @@ export default function HymnDisplay({ hymn, mode, textColor, backgroundColor, ba
             aria-label="Close display"
             onClick={onClose}
           >
-            ✕
+            <MdClose size={18} />
           </button>
         )}
         {!isLowerThird && (
@@ -91,7 +92,7 @@ export default function HymnDisplay({ hymn, mode, textColor, backgroundColor, ba
             aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
             onClick={toggleFullscreen}
           >
-            {isFullscreen ? '⛶ Exit Fullscreen' : '⛶ Fullscreen'}
+            {isFullscreen ? <><MdFullscreenExit size={14} /> Exit Fullscreen</> : <><MdFullscreen size={14} /> Fullscreen</>}
           </button>
         )}
         <div className="hymn__display__header">

@@ -1,4 +1,5 @@
 import React from 'react';
+import { MdSettings, MdExtension } from 'react-icons/md';
 
 const LABELS = {
   idle: 'Start Listening',
@@ -18,11 +19,11 @@ export default function ControlBar({ listening, status, onToggle, onOpenSettings
         {LABELS[status] ?? 'Start Listening'}
       </button>
       <button className="btn btn--ghost" onClick={onOpenSettings}>
-        ⚙ Settings
+        <MdSettings size={14} /> Settings
       </button>
       {onReselectModules && (
         <button className="btn btn--ghost" onClick={onReselectModules}>
-          🧩 Reselect modules
+          <MdExtension size={14} /> Reselect modules
         </button>
       )}
     </div>

@@ -1,10 +1,11 @@
 import React from 'react';
+import { MdMic, MdComputer, MdRefresh } from 'react-icons/md';
 import LevelMeter from './LevelMeter.jsx';
 
 const SOURCES = [
-  { value: 'mic', label: '🎤 Microphone' },
-  { value: 'system', label: '🖥 System audio' },
-  { value: 'both', label: '🎤 + 🖥 Mixed' },
+  { value: 'mic', label: 'Microphone', icon: MdMic },
+  { value: 'system', label: 'System audio', icon: MdComputer },
+  { value: 'both', label: 'Mixed', icon: null },
 ];
 
 export default function AudioSourcePanel({
@@ -31,7 +32,7 @@ export default function AudioSourcePanel({
               checked={source === opt.value}
               onChange={() => onSourceChange(opt.value)}
             />
-            {opt.label}
+            {opt.icon && <opt.icon size={14} />} {opt.label}
           </label>
         ))}
       </div>
@@ -51,7 +52,7 @@ export default function AudioSourcePanel({
             ))}
           </select>
           <button className="btn btn--ghost btn--small" onClick={onRefreshDevices}>
-            ↻
+            <MdRefresh size={14} />
           </button>
         </div>
       )}

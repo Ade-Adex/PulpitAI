@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { MdMic, MdMusicNote, MdMenuBook, MdCheck, MdArrowBack } from 'react-icons/md'
 
 /**
  * Splash / module-selection screen — Req #1.
@@ -19,19 +20,19 @@ const MODULES = [
     id: 'captioning',
     label: 'Live Captioning & Translation',
     desc: 'Real-time Yoruba → English sermon captions for OBS / vMix',
-    icon: '🎙️',
+    icon: MdMic,
   },
   {
     id: 'hymns',
     label: 'Hymn / Song Display',
     desc: 'Search and display hymns — EasyWorship-style, light & fast',
-    icon: '🎵',
+    icon: MdMusicNote,
   },
   {
     id: 'bible',
     label: 'Bible Display',
     desc: 'Scripture display — coming soon',
-    icon: '📖',
+    icon: MdMenuBook,
     soon: true,
   },
 ]
@@ -82,7 +83,7 @@ export default function SplashScreen({ initial = [], onStart, onCancel }) {
                   disabled={!!m.soon}
                   onChange={() => toggle(m.id)}
                 />
-                <span className="splash__module__icon">{m.icon}</span>
+                <span className="splash__module__icon"><m.icon size={20} /></span>
                 <div className="splash__module__text">
                   <div className="splash__module__label">
                     {m.label}
@@ -91,7 +92,7 @@ export default function SplashScreen({ initial = [], onStart, onCancel }) {
                   <div className="splash__module__desc">{m.desc}</div>
                 </div>
                 <span className="splash__module__tick">
-                  {checked ? '✓' : ''}
+                  {checked ? <MdCheck size={16} /> : ''}
                 </span>
               </label>
             )
@@ -114,7 +115,7 @@ export default function SplashScreen({ initial = [], onStart, onCancel }) {
             className="btn btn--ghost splash__cancel"
             onClick={onCancel}
           >
-            ← Back to previous
+            <MdArrowBack size={14} /> Back to previous
           </button>
         )}
 

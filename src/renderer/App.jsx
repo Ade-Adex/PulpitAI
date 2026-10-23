@@ -9,12 +9,14 @@ import PipelineStatus from './components/PipelineStatus.jsx'
 import SettingsPanel from './components/SettingsPanel.jsx'
 import SplashScreen from './components/SplashScreen.jsx'
 import TranscriptPanel from './components/TranscriptPanel.jsx'
+import AppTopBar from './components/AppTopBar.jsx'
 import HymnDisplay from './components/HymnDisplay.jsx'
 import { useAudioCapture } from './hooks/useAudioCapture.js'
 import { useSettings } from './hooks/useSettings.js'
 import { useTranscriber } from './hooks/useTranscriber.js'
 import { effectiveProvider } from './lib/providers.js'
 import { api } from './lib/api.js'
+import { MdMic, MdMusicNote, MdMenuBook, MdExtension, MdVideocam, MdLink, MdCellTower, MdSearch, MdImage, MdSettings, MdDelete } from 'react-icons/md'
 
 const MODULE_LABELS = {
   captioning: 'Captioning',
@@ -23,7 +25,9 @@ const MODULE_LABELS = {
 }
 
 function moduleIcon(id) {
-  return id === 'captioning' ? 'ðŸŽ™ï¸' : id === 'hymns' ? 'ðŸŽµ' : 'ðŸ“–'
+  if (id === 'captioning') return <MdMic size={14} />
+  if (id === 'hymns') return <MdMusicNote size={14} />
+  return <MdMenuBook size={14} />
 }
 
 export default function App() {
@@ -372,65 +376,18 @@ export default function App() {
     <div className="app">
       {preloading && <SplashScreen progress={loadProgress} />}
 
-      <header className="appbar">
-        <div className="appbar__brand">
-          <img className="appbar__logo" src="./logo.png" alt="PulpitAI logo" />
-          <div>
-            <h1 className="appbar__title">
-              Pulpit<span className="appbar__accent">AI</span>
-            </h1>
-            <span className="appbar__tag">Pro Presenter v3.0</span>
-          </div>
-        </div>
-        <div className="appbar__spacer"></div>
-        <nav className="appbar__tabs" aria-label="Modules">
-          {!singleModule && (
-            <>
-              {enabled?.map((m) => (
-                <button
-                  key={m}
-                  className={`appbar__tab ${activeTab === m ? 'is-active' : ''}`}
-                  onClick={() => setActiveTab(m)}
-                >
-                  <span className="appbar__tab__icon">{moduleIcon(m)}</span>
-                  <span className="appbar__tab__label">{MODULE_LABELS[m] ?? m}</span>
-                </button>
-              ))}
-            </>
-          )}
-          {singleModule && (
-            <button className="appbar__tab is-active" onClick={changeModules} title="Change modules">
-              <span className="appbar__tab__icon">ðŸ§©</span>
-              <span className="appbar__tab__label">Modules</span>
-            </button>
-          )}
-        </nav>
-        <div className="appbar__controls">
-          {hasCaptioning && (
-            <button
-              className={`btn btn--small ${listening ? 'btn--danger' : 'btn--primary'}`}
-              onClick={listening ? capture.stop : capture.start}
-              disabled={capture.status === 'starting'}
-              title={listening ? 'Stop capturing' : 'Start capturing'}
-            >
-              {listening ? 'Stop' : 'Start'}
-            </button>
-          )}
-          <span className="obs-source">
-            <span className="obs-source__icon">ðŸ“º</span> OBS Browser Source
-          </span>
-          <button className="btn btn--icon" title="Copy source URL">ðŸ”—</button>
-          <span className="broadcast-badge">
-            <span className="broadcast-badge__dot"></span> BROADCAST READY
-          </span>
-          <button className="btn btn--live" title="Go live">
-            <span className="btn--live__icon">ðŸ“¡</span> LIVE ON AIR
-          </button>
-          <button className="btn btn--icon btn--small" onClick={() => setShowSettings(true)} title="Settings">
-            âš™
-          </button>
-         </div>
-       </header>
+      <AppTopBar
+        enabled={enabled}
+        singleModule={singleModule}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        changeModules={changeModules}
+        hasCaptioning={hasCaptioning}
+        listening={listening}
+        captureStatus={capture.status}
+        onToggleCapture={listening ? capture.stop : capture.start}
+        onOpenSettings={() => setShowSettings(true)}
+      />
       <main className="layout">
         <aside className="layout__left">
           <section className="section hymnal__wrap">
@@ -460,7 +417,7 @@ export default function App() {
                 onClick={handleDeleteChurch}
                 disabled={!currentChurchId}
               >
-                ðŸ—‘ï¸
+                <MdDelete size={14} />
               </button>
             )}
           </section>
@@ -470,7 +427,7 @@ export default function App() {
               <span className="section__title">Search</span>
             </div>
             <div className="search-box">
-              <span className="search-box__icon">ðŸ”</span>
+              <span className="search-box__icon"><MdSearch size={14} /></span>
               <input
                 className="search-box__input"
                 placeholder="Search #, title or lyric textâ€¦"
@@ -561,7 +518,7 @@ export default function App() {
               </div>
             </div>
             <label className="upload-bg">
-              ðŸ–¼ï¸ Upload Background Image
+              <MdImage size={14} /> Upload Background Image
               <input type="file" accept="image/*" onChange={handleBgUpload} style={{ display: 'none' }} />
             </label>
             {bgImage && (
@@ -602,7 +559,7 @@ export default function App() {
                       }}
                     >
                       <span className="recent-item__num">
-                        {r.number != null ? `#${r.number}` : 'ðŸ”'}
+                        {r.number != null ? `#${r.number}` : <MdSearch size={12} />}
                       </span>
                       <span className="recent-item__title">{r.label}</span>
                     </button>
@@ -632,7 +589,7 @@ export default function App() {
               <div className="obs-preview__actions">
                 <button className="btn btn--ghost btn--small">Clear Text</button>
                 <button className="btn btn--icon btn--small" title="Black">â¬›</button>
-                <button className="btn btn--icon btn--small" title="Logo">ðŸ–¼ï¸</button>
+                <button className="btn btn--icon btn--small" title="Logo"><MdImage size={14} /></button>
               </div>
             </div>
             <div className="obs-preview__pane">
@@ -653,12 +610,12 @@ export default function App() {
           <div className="song-library">
             <div className="song-library__bar">
               <div className="song-library__title">
-                ðŸŽµ Song Library & Hymns
+                <MdMusicNote size={14} /> Song Library & Hymns
                 <span className="song-library__count">{hymns.length} Hymns</span>
               </div>
               <div className="song-library__controls">
                 <div className="filter-box">
-                  <span className="filter-box__icon">ðŸ”</span>
+                  <span className="filter-box__icon"><MdSearch size={14} /></span>
                   <input
                     className="filter-box__input"
                     placeholder="Filter by title or numberâ€¦"

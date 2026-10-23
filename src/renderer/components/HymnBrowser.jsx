@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../lib/api.js';
 import HymnDisplay from './HymnDisplay.jsx';
+import { MdSettings, MdArrowBack, MdClose } from 'react-icons/md';
 
 /**
  * HymnBrowser — EasyWorship-inspired hymn display, kept light.
@@ -347,7 +348,7 @@ export default function HymnBrowser({ onBack, onSettings, settings, compact = fa
   if (!provider) {
     return (
       <div className="hymn__empty">
-        <div className="hymn__empty__icon">⚙️</div>
+        <div className="hymn__empty__icon"><MdSettings size={24} /></div>
         <div className="hymn__empty__title">No church configured</div>
         <div className="hymn__empty__desc">
           Add a church with a Christ BC Hymn API key in Settings, then return
@@ -358,7 +359,7 @@ export default function HymnBrowser({ onBack, onSettings, settings, compact = fa
             className="btn btn--ghost btn--small"
             onClick={onSettings}
           >
-            ⚙️ Open Settings
+            <MdSettings size={14} /> Open Settings
           </button>
         )}
         {onBack && (
@@ -376,7 +377,7 @@ export default function HymnBrowser({ onBack, onSettings, settings, compact = fa
       <header className="hymn__browser__top">
         {onBack && !compact && (
           <button className="btn btn--ghost btn--small" onClick={onBack}>
-            ← Reselect modules
+            <MdArrowBack size={14} /> Reselect modules
           </button>
         )}
         <div className="hymn__browser__top__meta">
@@ -431,7 +432,7 @@ export default function HymnBrowser({ onBack, onSettings, settings, compact = fa
               title="Church & display settings"
               onClick={onSettings}
             >
-              ⚙️
+              <MdSettings size={14} />
             </button>
           )}
         </div>
@@ -657,7 +658,7 @@ export default function HymnBrowser({ onBack, onSettings, settings, compact = fa
                       aria-label={`Remove ${r.label}`}
                       onClick={() => removeRecent(r.number ?? r.label)}
                     >
-                      ✕
+                      <MdClose size={14} />
                     </button>
                   </li>
                 ))}
@@ -675,7 +676,7 @@ export default function HymnBrowser({ onBack, onSettings, settings, compact = fa
             aria-label="Close lyrics"
             onClick={() => setSelectedHymn(null)}
           >
-            ✕
+            <MdClose size={14} />
           </button>
           <div className="hymn__lyrics__header">
             <div className="hymn__lyrics__number">{selectedHymn.number ?? '—'}</div>

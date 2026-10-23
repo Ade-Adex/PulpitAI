@@ -1,4 +1,5 @@
 import React from 'react';
+import { MdAutorenew, MdWarning } from 'react-icons/md';
 import { PROVIDERS } from '../lib/providers.js';
 
 const MESSAGES = {
@@ -16,7 +17,7 @@ export default function PipelineStatus({ state, error, warning, demoMode, provid
     <section className="panel">
       <h2 className="panel__title">Pipeline</h2>
       <p className={`pipeline-state pipeline-state--${state}`}>
-        {state === 'transcribing' || state === 'translating' ? '◌ ' : ''}
+        {state === 'transcribing' || state === 'translating' ? <MdAutorenew size={12} /> : null}{' '}
         {MESSAGES[state] ?? state}
       </p>
       {provider && <p className="hint">Provider: <strong>{providerLabel}</strong></p>}
@@ -27,7 +28,7 @@ export default function PipelineStatus({ state, error, warning, demoMode, provid
           real Yoruba transcription + English translation.
         </p>
       )}
-      {warning && <p className="error-text error-text--warn">⚠ {warning}</p>}
+      {warning && <p className="error-text error-text--warn"><MdWarning size={12} /> {warning}</p>}
       {error && <p className="error-text">{error}</p>}
     </section>
   );
